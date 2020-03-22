@@ -19,9 +19,7 @@ while abs(TOW_new - TOW)/TOW > 1e-5
     t_total  = 0;
     alt      = 0;
     d_dist = 0;
-    
-    % needs to travel 4000km first then 40hr endurance
-    
+        
     %for i = 1:n_time_pts+1
     while t_cruise < endurance_target*3600
         %determine ambients
