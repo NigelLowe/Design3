@@ -123,7 +123,7 @@ set(gcf,'Position',[00 400 670 520])
 legend([h1,h2,h3],'UAV','Manned','Our Solution', 'Location','southeast');
 grid on
 
-
+% uncomment this for comparing for cruise engine and propeller
 % % Endurance vs Power - to show we want a small engine but have to
 % % comprimise to takeoff (highlight C-2 Greyhound)
 % iPower = find(strcmp(columns,'Power (kW)'));
