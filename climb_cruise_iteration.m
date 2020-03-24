@@ -34,7 +34,7 @@ while abs(TOW_new - TOW)/TOW > 1e-5
         rho  = press/(R*temp);
 
         if t >= endurance_target/2  && counter_2 == 0 
-            PL_dropped = 0.5*PL;
+            PL_dropped = PL + 500;
             w = w - PL_dropped; %loose PL
             cdo  = cd0c;  % drag improvement from external payload
             counter_2 = counter_2 + 1;
