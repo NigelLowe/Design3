@@ -75,7 +75,7 @@ while delta > 1e-5 && delta_counter < 1e4
             v(i) = 102.8889/0.8*0.9; %200 kts
             cl(i)= L(i)/(0.5*rho(i)*S*v(i)^2);
             
-            cd   = cdo + k*cl(i)^2;
+            cd   = cdo + k*(cl(i)-clmin)^2;
             D(i) = cd*(0.5*rho(i)*S*v(i)^2);
             
             L_D(i) = L(i)/D(i);
@@ -99,8 +99,8 @@ while delta > 1e-5 && delta_counter < 1e4
     end
     
     % weights
-    %empty_weight = 1.66*TOW^0.815; %As per texts
-    empty_weight = 6000;            % Used when BEW is fixed
+    empty_weight = 1.66*TOW^0.815; %As per texts
+    %empty_weight = 6000;            % Used when BEW is fixed
     
     fuel         = sum(fused); %account for PL loss too;
     
@@ -112,5 +112,5 @@ while delta > 1e-5 && delta_counter < 1e4
     
     % Take mean of 2 values for stability
     TOW = (TOW + TOW_new)/2;
-    
+    cdo = cd0;
 end
