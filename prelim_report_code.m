@@ -57,11 +57,9 @@ for m_index = 1:length(pl_vector)
         
         endurance_target = en_vector(n_index);
         
-        climb_cruise_iteration_Ben1
+        climb_cruise_iteration
         
         TOW_results(m_index,n_index) = TOW;
-        %Power_required(m_index,n_index) = Power;
-        dc(m_index,n_index) = delta_counter;
 
         % Wait bar
         hwait = waitbar(h_bar/(length(pl_vector) * length(en_vector)));

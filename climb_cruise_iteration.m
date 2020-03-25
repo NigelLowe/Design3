@@ -9,7 +9,6 @@ P0   = 101300;
 %Initalise variables
 TOW     = endurance_target/2 * 1e3; %kg (guess starting weight)
 TOW_new = 2*TOW;
-% delta = 1;
 n_time_pts = 1e4; 
 delta_counter = 0; %to avoid infinte loop
 time_res   = endurance_target/n_time_pts; %hrs
