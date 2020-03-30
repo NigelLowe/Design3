@@ -15,6 +15,7 @@ k   = 1/(pi*e*AR);
 %Engine
 TSFC = 13*1e-6;   %kg/(s.N)
 prop_n = 0.8;
+P = 8202e3;     % W
 
 
 %mission parameters
@@ -32,3 +33,8 @@ clmax = 1.8;
 clmin = 0.2; 
 cd0 = cdo;    % with payload drag coefficient
 cd0c = 0.025; % no external payload drag coefficient
+
+
+% constants
+g = 9.81;
+rho0 = 1.225;

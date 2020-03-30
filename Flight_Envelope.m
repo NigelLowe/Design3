@@ -6,19 +6,33 @@ clc;
 clear;
 clf;
 
+albatross_parameters;
+
 % Input aerodynamic parameters.
-MTOW = 1435;            % lbs
-S = 191.5;              % ft^2 wing area
-b = 57.4;               % wing span in feet    
-rho = 0.0023769;        % slugs/ft^3 density factor at service ceiling*density atsea level
-V_stalldown = 38;       %  knots
-V_stallup = 35;         %  knots
-W_L = MTOW/S;           % lb/ft^2 wing loading
-C = S/b;                % mean chord, feet
-AR = b^2/S;             % wing aspect ratio
-g = 32.2;               % gravity in imperial ft/s^2
-U_1 = 50;               % 50 ft/s gust cruise
-U_2 = 25;               % 25 ft/s gust dive
+% MTOW = 1435;            % lbs
+% S = 191.5;              % ft^2 wing area
+% b = 57.4;               % wing span in feet    
+% rho = 0.0023769;        % slugs/ft^3 density factor at service ceiling*density atsea level
+% V_stalldown = 38;       %  knots
+% V_stallup = 35;         %  knots
+% W_L = MTOW/S;           % lb/ft^2 wing loading
+% C = S/b;                % mean chord, feet
+% AR = b^2/S;             % wing aspect ratio
+% g = 32.2;               % gravity in imperial ft/s^2
+% U_1 = 50;               % 50 ft/s gust cruise
+% U_2 = 25;               % 25 ft/s gust dive
+
+MTOW = 23000*2.20462;     % lbs
+S = S*3.28084^2;          % ft^2 wing area
+b = b*3.28084;            % wing span in feet    
+rho = rho0*0.00194032;    % slugs/ft^3 density factor at service ceiling*density atsea level
+V_stalldown = 55*1.94384; % knots
+V_stallup = 52*1.94384;   % knots
+W_L = MTOW/S;             % lb/ft^2 wing loading
+C = c*3.28084;            % mean chord, feet
+g = 32.2;                 % gravity in imperial ft/s^2
+U_1 = 50;                 % 50 ft/s gust cruise
+U_2 = 25;                 % 25 ft/s gust dive
 
 %% Calculations
 
@@ -27,10 +41,13 @@ CLmax_Down = MTOW/(0.5*rho*S*(V_stalldown^2));
 CLmax_Up = MTOW/(0.5*rho*S*(V_stallup^2));
 
 % Designed cruise speed.
-V_C = 92;
+% V_C = 92;
+V_C = 200; % knots
 
 % Limiting dive speed
-V_D = 135;
+% V_D = 135;
+V_D = 320; % knots
+
 
 % Lift curve slope
 a = (2*pi)/(1+2/AR);
@@ -38,7 +55,7 @@ ug = (2*W_L)/(rho*C*g*a);
 K = (0.88 * ug)/(5.3 +ug);
 
 % max loading factor
-nmax_positive = 4.2; %2.1 + (24000/(MTOW + 10000));
+nmax_positive = max(4.2, 2.1 + (24000/(MTOW + 10000)));
 nmax_negative = -1*0.4 * nmax_positive;
 
 % maximum load factor due to cruise gust or dive gust
@@ -153,5 +170,5 @@ x = [0 V_D];
 y = [1 1];
 plot(x,y,'k');
 
-axis([0 140 -3.0482 5.0482]);
+axis([0 V_D*1.1 -3.0482 5.0482]);
 box on

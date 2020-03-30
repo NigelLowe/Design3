@@ -4,38 +4,8 @@ clc
 
 % DESIGN 3 - Preliminary Sizing - Group 3
 
-%Wing + Aero Parameters
-b   = 30; %m
-AR  = 10;            
-S   = b^2/AR;
-c   = S/b;
-theta = acosd(10/(b/2)); % deg - angle of sweep - 20m runway width
-
-e   = 0.85;
-cdo = 0.03;
-k   = 1/(pi*e*AR);
-
-%Engine
-TSFC = 13*1e-6;   %kg/(s.N)
-P = 8202000/2.5; % engine 2.5 times smaller than TP-400 
-eff = 0.8;
-
-%mission parameters
-reach_toc        = 6;  %hrs
-cruise_alt       = 40000/3.281; %m
-%v_cruise         = 102.8889/0.8*0.9; %200*0.51444; %m/s
-v_cruise         = 180*0.51444; % m/s
-
-target_roc       = cruise_alt/reach_toc/3600; %m/s
-ld_climb         = 1/(2*sqrt(k*cdo)); %min l_d
-cl_climb         = sqrt(pi*AR*cdo*e);
-
-reserves         = 0.01; %decent/approach/taxi
-
-clmax = 2.25*cosd(theta);
-clmin = 0.2; 
-cd0 = cdo;% with payload drag coefficient
-cd0c = 0.025; % no external payload drag coefficient
+% Call Parameters
+albatross_parameters;
 
 %Mission Req
 % Mission 1 MAX PL and 40 hrs En
@@ -99,34 +69,14 @@ annotation('textbox',...
     'FontSize',12,...
     'FitBoxToText','off');
 
-% Plot mission lines
-% plot(mission_1_x,mission_1_y,'--','color','k')
-% plot(mission_2_x,mission_2_y,'--','color','k')
-
 tow = TOW_results(~isinf(TOW_results));
 ylim([max(min(min(tow))-1e4,0),max(max(tow))+1e4])
 xlim([10,50])
-
-% vertical
-plot([24.84 24.84],[max(min(min(tow))-1e4,0),max(max(tow))+1e4],'--',...
-   'color','k','linewidth',2)
-
-% horizontal
-plot([10,50],[14273 14273],'--',...
-   'color','k','linewidth',2)
-
-annotation('textbox',...
-    [0.6 0.25 0.3 0.05],...
-    'String','dotted line is limitation from 200m runway',...
-    'LineStyle','none',...
-    'FontSize',12,...
-    'FitBoxToText','off');
 
 legend(legend_labels,'location','NW')
 
 
 %% Take off distance
-% use weight for 50hrs
 
 for m_index = 1:length(pl_vector)
     for n_index = 1:length(en_vector)
@@ -136,13 +86,11 @@ for m_index = 1:length(pl_vector)
         Vr = 1.1*Vstall;
         V = Vr/sqrt(2);
 
-        T = P*eff/V;
+        T = P*prop_n/V;
 
-        e   = 0.6;
-        k   = 1/(pi*e*AR);
         cd = cd0 + k*(clmax-clmin)^2;
         D = 0.5*cd*rho0*V^2*S;
-        L = 0.5*clmax*rho0*(V*cosd(theta))^2*S;
+        L = 0.5*clmax*rho0*V^2*S;
         
         mu = 0.02;
         F = mu*(m*g - L);
@@ -178,7 +126,7 @@ annotation('textbox',...
     'FontSize',12,...
     'FitBoxToText','off');
 
-ylim([0,1000])
+ylim([0,min(1000,max(max(s_dist))*1.05)])
 xlim([10,50])
 
 legend(legend_labels,'location','NW')

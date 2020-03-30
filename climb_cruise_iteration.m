@@ -159,7 +159,8 @@ while t(i) <= endurance_target
        end
     end
 
-    w(i+1) = w(i) - Thrust(i)*TSFC*time_res*3600; %end of segement fuel
+    fused(i) = Thrust(i)*TSFC*time_res*3600;
+    w(i+1) = w(i) - fused(i); %end of segement fuel
     t(i+1) = t(i) + time_res;
 
     %advance referencing parameter
