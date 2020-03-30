@@ -1,0 +1,20 @@
+% Function that calculates minimum drag for the aircraft
+% Input: Whether we have payload or not
+% Author: Jack Knight
+% Date: 30/03/20
+
+function Cd0 = dragBuildUp(payload)
+  
+  % Do we have a payload?
+  if payload == 0
+    Cd_payload = 0;
+  else
+    Cd_payload = 0.1;
+  end
+  
+  % Get the drag for a range of key design features
+  Cd_fuse = 0.2;
+  
+  % Add up everything
+  Cd0 = Cd_fuse + Cd_payload;
+end
