@@ -10,9 +10,9 @@ albatross_parameters_maritime
 
 %Vectors of PL and Endurance
 
-pl_vector = linspace(500,500,1);
+pl_vector = linspace(500,3500,2);
 
-en_vector = linspace(32,32,1); 
+en_vector = linspace(22,32,10); 
 
 %Wait bar for sanity
 
