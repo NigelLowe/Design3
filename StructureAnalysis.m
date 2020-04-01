@@ -1,7 +1,9 @@
 % Structural Analysis
 % 460368355
 
-clear
+if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
+    clear
+end
 clc
 close all
 
@@ -13,8 +15,17 @@ set(groot,'defaultLineLineWidth',2.0,...
     'defaultAxesYGrid','on')
 
 %% general parameters
-albatross_parameters;
+if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
+    pl_num = 3500;
+    en_num = 30;
+end
+plotOtherGraphs = 'no';
+prelim_report_code;
 
+clearvars -except fused time_res pl_num en_num
+
+%% general parameters
+albatross_parameters
 % flight condition
 V = 80; % m/s
 
@@ -50,7 +61,7 @@ legend('trapezoid','ellipse','mean')
 ylabel('lift distribution shape')
 xlabel('span location (m)')
 xlim([0 b/2])
-
+   
 %% volume in wing - NASA1015
 
 % start at (0,0)
@@ -72,23 +83,28 @@ nasa1015bottom = [0.000000 ...
              -0.025652 -0.024494 -0.023028 -0.021274 -0.019239 -0.016865 -0.014081 -0.010938 -0.007663 ...
              -0.004646 -0.002130 -0.000215  0.001069  0.001761  0.001957  0.001792  0.001378  0.000884 ...
              0.000429 0.000113 0.000000];
-         
+
 figure(2)
 plot(nasa1015x,nasa1015top,'b', nasa1015x,nasa1015bottom,'b')
-
-% sums area inside aerofoil, then scales x and y by multiplying by local
-% chord c, and gets volume of element with xDelta  
-wingArea = sum((nasa1015top(1:end-1)-nasa1015bottom(1:end-1)).*diff(nasa1015x));
-volume = sum(wingArea * c.^2*xDelta);
-fprintf('Volume in 1 wing: %.3f m^3\n', volume);
+    
 
 % volume required
 % for PL = 2500kg, endurance = 50hr
-f_used = 13464; % kg
+f_used = sum(fused); % kg
 rho_fuel = 804; % kg/m^3
+         
+% sums area inside aerofoil, then scales x and y by multiplying by local
+% chord c, and gets volume of element with xDelta  
+wingArea = sum((nasa1015top(1:end-1)-nasa1015bottom(1:end-1)).*diff(nasa1015x));
+volumeWing = sum(wingArea * c.^2*xDelta) * 0.4; % 60% of wing available for fuel usage
+wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta;
+fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
+
 V_required = f_used/rho_fuel;
 fprintf('Volume required: %.3f m^3\n', V_required);
-fprintf('Fuel Amount left (wings 80%% full): %.3f m^3\n', V_required - 2*volume*0.8);
+internalFuel = V_required - 2*volumeWing;
+internalFuelWeight = internalFuel*rho_fuel;
+fprintf('Fuel Amount left (wings 80%% full): %.3f m^3\n', internalFuel);
 
 %% Material list
 % AL 7075-T6 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T6
@@ -117,11 +133,11 @@ fprintf('center Lift: %.0f N\n', L(1));
 fprintf('total Lift: %.0f N\n', totalLift);
         
 h = 0.15*c; % m - height of beam at each section
-b_cap0 = 0.1; % m - constant beam width (value for plot)
-t_cap0 = 0.01; % m 
+b_cap0 = 0.15; % m - constant beam width (value for plot)
+t_cap0 = 0.07; % m 
 
-b_cap_vec = 0.05:0.01:0.3; % m
-t_cap_vec = 0.01:0.02:0.1; % m
+b_cap_vec = b_cap0; %0.05:0.01:0.3; % m
+t_cap_vec = t_cap0; %0.01:0.02:0.1; % m
 
 % assign material values
 beamUsed = 'AL7075';
@@ -137,20 +153,14 @@ for m = 1:length(t_cap_vec)
     for n = 1:length(b_cap_vec)
         b_cap = b_cap_vec(n);
         
-%         beamWeight = rhoBeam*t_cap*(2*b_cap+h-2*t_cap)*xDelta;
-        % fuel + beam weight
-        wingWeight = (wingArea*c.^2*rho_fuel + rhoBeam*t_cap*(2*b_cap+h-2*t_cap)) *xDelta*g;
+        beamWeight = rhoBeam*t_cap*(2*b_cap+h-2*t_cap)*xDelta;
+        wingWeight = (wingFuelWeight + beamWeight)*g;
         L = L - wingWeight;
 %         figure(3)
 %         plot(x,L_orig, x,wingWeight, x,L)
 %         ylabel('Force (N)')
 %         xlabel('span location (m)')
 %         legend('Lift','Fuel Weight','Net Vertical')
-
-        % assume triangular shaped distribution along chord (largest load at leading edge)
-%         totalLift = 0.5 * sum(c.*L) * xDelta;
-%         fprintf('center Lift: %.0f N\n', L(1));
-%         fprintf('total Lift: %.0f N\n', totalLift);
 
 
         % bending
@@ -211,6 +221,7 @@ for m = 1:length(t_cap_vec)
         maxW(m,n) = max(w);
     end
 end
+
 
 figure(5)
 subplot(2,2,1)

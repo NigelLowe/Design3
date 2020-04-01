@@ -85,8 +85,8 @@ while abs(TOW_new - TOW)/TOW > 1e-5
     end
 
     % weights
-    empty_weight = 1.66*TOW^0.815; %As per texts
-    %empty_weight = 6000;            % Used when BEW is fixed
+    %empty_weight = 1.66*TOW^0.815; %As per texts
+    empty_weight = 5000;            % Used when BEW is fixed
 
     % Calc new TOW with mass fraction approach.
     TOW_new = (empty_weight + (w_initial - w) + (PL - PL_dropped))/(1-500/TOW);

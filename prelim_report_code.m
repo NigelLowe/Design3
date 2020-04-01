@@ -1,6 +1,8 @@
-clear all, 
-close all,
-clc
+if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
+    clear all, 
+    close all,
+    clc
+end
 
 % DESIGN 3 - Performance Script - Group 3
 
@@ -22,8 +24,13 @@ mission_3_x = [40 55];
 mission_3_y = [23e3 23e3];
 
 %Vectors of PL and Endurance
-pl_vector = linspace(500,3500,4);
-en_vector = linspace(40,55,10); 
+pl_vector = 500; %500,3500]; %linspace(500,3500,4);
+en_vector = linspace(10,70,10); 
+
+if exist('plotOtherGraphs','var') % if statement for this file use in other functions
+    pl_vector = pl_num;
+    en_vector = en_num;
+end
 
 %Wait bar for sanity
 hwait = waitbar(0,'Please wait...');
@@ -82,12 +89,12 @@ annotation('textbox',...
     'FitBoxToText','off');
 
 % Plot mission lines
-plot(mission_1_x,mission_1_y,'--','color','k','linewidth',3)
-plot(mission_2_x,mission_2_y,'--','color','k','linewidth',3)
-plot(mission_3_x,mission_3_y,'--','color','k','linewidth',3)
+% plot(mission_1_x,mission_1_y,'--','color','k','linewidth',3)
+% plot(mission_2_x,mission_2_y,'--','color','k','linewidth',3)
+% plot(mission_3_x,mission_3_y,'--','color','k','linewidth',3)
 
-tow = TOW_results(~isinf(TOW_results));
-ylim([min(min(tow))-1e4,max(max(tow))+1e4])
-xlim([40,55])
+% tow = TOW_results(~isinf(TOW_results));
+% ylim([min(min(tow))-1e4,max(max(tow))+1e4])
+% xlim([40,55])
 
 legend(legend_labels,'location','NW')
