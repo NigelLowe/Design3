@@ -5,7 +5,8 @@ clc
 % DESIGN 3 - Preliminary Sizing - Group 3
 
 % Call Parameters
-albatross_parameters;
+albatross_parameters_maritime;
+%albatross_parameters_airfield;
 
 %Mission Req
 % Mission 1 MAX PL and 40 hrs En

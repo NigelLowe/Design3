@@ -21,11 +21,15 @@ if ~exist('plotOtherGraphs','var') % if statement for this file use in other fun
 end
 plotOtherGraphs = 'no';
 prelim_report_code;
+clc
+close all
 
 clearvars -except fused time_res pl_num en_num
 
 %% general parameters
-albatross_parameters
+albatross_parameters_maritime;
+%albatross_parameters_airfield;
+
 % flight condition
 V = 80; % m/s
 

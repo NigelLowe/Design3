@@ -6,7 +6,8 @@ clc;
 clear;
 clf;
 
-albatross_parameters;
+albatross_parameters_maritime;
+%albatross_parameters_airfield;
 
 % Input aerodynamic parameters.
 % MTOW = 1435;            % lbs

@@ -22,7 +22,8 @@ set(groot,'defaultLineLineWidth',2.0,...
     'defaultAxesYGrid','on')
 
 % basic parameters
-albatross_parameters;
+albatross_parameters_maritime;
+%albatross_parameters_airfield;
 
 % class inputs
 % name, weight (kg), location fraction (0-1)(non dimensional), aircraft length [L](m)) 

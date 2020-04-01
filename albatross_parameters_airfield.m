@@ -1,4 +1,4 @@
-%% Call all Albatross Parameters
+%% Call all Albatross Parameters - Maritime
 
 %Wing + Aero Parameters
 S   = 48.4;        %m2
@@ -13,7 +13,8 @@ k   = 1/(pi*e*AR);
 %Engine
 TSFC = 13*1e-6;   %kg/(s.N)
 prop_n = 0.8;
-P = 8202e3;     % W
+
+empty_weight = 5200;  % Used when BEW is fixed
 
 
 %mission parameters
@@ -32,7 +33,23 @@ cl_climb        = sqrt(pi*AR*cdo*e);
 clmax = 1.8;
 clmin = 0.2; 
 cd0 = cdo;    % with payload drag coefficient
-cd0c = 0.028; % no external payload drag coefficient
+cd0c = 0.021; % no external payload drag coefficient
+
+%Mission Req (for plotting)
+
+% requirement 1 MAX PL
+mission_1_x = [40 40];
+mission_1_y = [0 22e3];
+
+% requirement 2 (surv only)
+mission_2_x = [52 52];
+mission_2_y = [0 22e3];
+
+% requirement 3 rotor takeoff
+mission_3_x = [10 55];
+mission_3_y = [22e3 22e3];
+
+x_lim_plot = [40-1 52+1];
 
 
 % constants
