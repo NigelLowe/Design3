@@ -23,8 +23,11 @@ classdef weightClass < handle
             w = sum([obj.weight]);
             m = sum([obj.moment]);
         end
+        function s = length(obj)
+            s = size(obj,2);
+        end
         function lb2kg(obj)
-            for i = 1:size(obj,2)
+            for i = 1:obj.length
                 obj(i).weight = obj(i).weight * 0.453592;
             end
         end

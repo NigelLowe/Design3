@@ -1,4 +1,4 @@
-%% Call all Albatross Parameters - Maritime
+%% Call all Albatross Parameters - Airfield
 
 %Wing + Aero Parameters
 S   = 48.4;        %m2
@@ -21,9 +21,8 @@ empty_weight = 5200;  % Used when BEW is fixed
 reach_toc       = 2;  %hrs
 cruise_alt      = 40000/3.281; %m
 loiter_point    = 4000e3; %4000 km
-v_cruise        = convvel(200,'kts','m/s');
-%v_loiter        = convvel(200,'kts','m/s');
-v_loiter        = convvel(170,'kts','m/s');
+v_cruise        = convvel(250,'kts','m/s');
+v_loiter        = convvel(200,'kts','m/s');
 
 
 target_roc      = cruise_alt/reach_toc/3600; %m/s

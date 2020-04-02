@@ -103,8 +103,11 @@ while abs(TOW_new - TOW)/TOW > 1e-5
             Thrust = cd*(0.5*rho*S*v_cruise^2);
             
            else
+            
+            %fly at min drag speed
+            cl = sqrt(cdo/k);
                
-            cl= L/(0.5*rho*S*v_loiter^2);
+            v_loiter= (L/(0.5*rho*S*cl))^0.5;
 
             cd   = cdo + k*(cl-clmin)^2;
 
@@ -131,7 +134,9 @@ while abs(TOW_new - TOW)/TOW > 1e-5
     
 
     % weights
+
     %empty_weight = 1.2*1.66*TOW^0.815; %As per texts
+
 
     % Calc new TOW with mass fraction approach.
 
@@ -228,7 +233,10 @@ end
             
            else
                
-            cl(i)= L(i)/(0.5*rho*S*v_loiter^2);
+            %fly at min drag speed
+            cl(i) = sqrt(cdo/k);
+               
+            v_loiter = (L(i)/(0.5*rho*S*cl(i)))^0.5;
 
             cd(i)   = cdo + k*(cl(i)-clmin)^2;
 
