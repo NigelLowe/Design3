@@ -17,7 +17,8 @@ classdef weightClass < handle
                 obj.weight = w;
             end
             obj.location = x*L;
-            obj.moment = w*x*L;
+            %obj.moment = w*x*L;
+            obj.moment = obj.weight * obj.location;
         end
         function [w, m] = totalWM(obj)
             w = sum([obj.weight]);
@@ -29,6 +30,7 @@ classdef weightClass < handle
         function lb2kg(obj)
             for i = 1:obj.length
                 obj(i).weight = obj(i).weight * 0.453592;
+                obj(i).moment = obj(i).weight * obj(i).location;
             end
         end
         function updateWeight(obj,weight)

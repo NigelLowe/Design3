@@ -24,7 +24,7 @@ prelim_report_code;
 clc
 close all
 
-clearvars -except fused time_res pl_num en_num
+%clearvars -except fused time_res pl_num en_num
 
 %% general parameters
 albatross_parameters_maritime;
@@ -100,7 +100,7 @@ rho_fuel = 804; % kg/m^3
 % sums area inside aerofoil, then scales x and y by multiplying by local
 % chord c, and gets volume of element with xDelta  
 wingArea = sum((nasa1015top(1:end-1)-nasa1015bottom(1:end-1)).*diff(nasa1015x));
-volumeWing = sum(wingArea * c.^2*xDelta) * 0.4; % 60% of wing available for fuel usage
+volumeWing = sum(wingArea * c.^2*xDelta) * 0.7; % 70% of wing available for fuel usage
 wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta;
 fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
 
@@ -108,7 +108,7 @@ V_required = f_used/rho_fuel;
 fprintf('Volume required: %.3f m^3\n', V_required);
 internalFuel = V_required - 2*volumeWing;
 internalFuelWeight = internalFuel*rho_fuel;
-fprintf('Fuel Amount left (wings 80%% full): %.3f m^3\n', internalFuel);
+fprintf('Fuel Amount left (wings 70%% full): %.3f m^3\n', internalFuel);
 
 %% Material list
 % AL 7075-T6 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T6
