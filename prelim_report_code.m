@@ -1,14 +1,14 @@
 if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
     clear all
+    
+    % Call Parameters
+    albatross_parameters_maritime
+    %albatross_parameters_airfield
 end
 clc
 close all
 
 % DESIGN 3 - Performance Script - Group 3
-
-% Call Parameters
-albatross_parameters_maritime
-%albatross_parameters_airfield
 
 % requirement 3 rotor takeoff
 mission_3_x = [40 55];

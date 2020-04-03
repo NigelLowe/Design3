@@ -3,6 +3,10 @@
 
 if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
     clear
+    
+    % general parameters
+    albatross_parameters_maritime;
+    %albatross_parameters_airfield;
 end
 clc
 close all
@@ -23,12 +27,6 @@ plotOtherGraphs = 'no';
 prelim_report_code;
 clc
 close all
-
-%clearvars -except fused time_res pl_num en_num
-
-%% general parameters
-albatross_parameters_maritime;
-%albatross_parameters_airfield;
 
 % flight condition
 V = 80; % m/s
@@ -171,7 +169,7 @@ for m = 1:length(t_cap_vec)
         %{
         https://ocw.mit.edu/courses/aeronautics-and-astronautics/16-01-unified-engineering-i-ii-iii-iv-fall-2005-spring-2006/systems-labs-06/spl10.pdf
         %}      
-        S = zeros(1,length(x)); % N/m^2? - shear
+        Sh = zeros(1,length(x)); % N/m^2? - shear
         M = zeros(1,length(x)); % Nm - bending moment
         theta = zeros(1,length(x)); % rad - deflection angle
         w = zeros(1,length(x)); % m - deflection
@@ -182,8 +180,8 @@ for m = 1:length(t_cap_vec)
         I = 2*I_cap + I_middle;
 
         for i = length(x)-1:-1:1 % 0 stress and moment at wing tip
-            S(i) = S(i+1) - 0.5*(0.5*L(i+1)*c(i+1)+0.5*L(i)*c(i))*xDelta;
-            M(i) = M(i+1) - 0.5*(S(i+1)+S(i))*xDelta;
+            Sh(i) = Sh(i+1) - 0.5*(0.5*L(i+1)*c(i+1)+0.5*L(i)*c(i))*xDelta;
+            M(i) = M(i+1) - 0.5*(Sh(i+1)+Sh(i))*xDelta;
         end
         for j = 2:length(x) % 0 deflection at wing root
             theta(j) = theta(j-1) + 0.5*(M(j)/E/I(j) + M(j-1)/E/I(j-1))*xDelta;
@@ -193,7 +191,7 @@ for m = 1:length(t_cap_vec)
         if t_cap == t_cap0 && b_cap == b_cap0
             figure(4)
             subplot(2,2,1)
-            plot(x,S)
+            plot(x,Sh)
             ylabel('Shear (N)')
             xlabel('span location (m)')
             title(['b_{cap} = ',num2str(b_cap), ' m, t_{cap} = ',num2str(t_cap),' m'])
@@ -220,7 +218,7 @@ for m = 1:length(t_cap_vec)
             xlim([0 b/2])
         end
         
-        maxS(m,n) = min(S);
+        maxS(m,n) = min(Sh);
         maxM(m,n) = max(M);
         maxW(m,n) = max(w);
     end

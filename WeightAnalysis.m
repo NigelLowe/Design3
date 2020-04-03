@@ -8,7 +8,13 @@
 % all equations from Nicolai unless otherwise specified
 
 clear
+clc
+close all
 
+% basic parameters
+albatross_parameters_maritime;
+%albatross_parameters_airfield;
+    
 pl_vec = [3500 500]; % single payload value for run
 en_vec = [30   45];  % single endurance value for run
 
@@ -16,16 +22,17 @@ t_vec = [];
 totalWeight_vec = [];
 cg_percent_vec = [];
 
-for k = 1:length(pl_vec)
-    pl_num = pl_vec(k);
-    en_num = en_vec(k);
+for m = 1:length(pl_vec)
+    pl_num = pl_vec(m);
+    en_num = en_vec(m);
     
     plotOtherGraphs = 'no';
     StructureAnalysis; % runs prelim_report_code as well to get fuel used
 
     close all;
     clc;
-    %clearvars -except internalFuelWeight wingFuelWeight beamWeight taper_r fused time_res pl_num en_num c V rho_fuel
+    clearvars -except internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 mission_1_x mission_1_y mission_2_x mission_2_y
+    
 
     fprintf('%.0f kg payload | %.0f hr endurance\n', pl_num, en_num);
     
@@ -35,20 +42,16 @@ for k = 1:length(pl_vec)
         'defaultLineMarkerSize',30,...
         'defaultAxesXGrid','on',...
         'defaultAxesYGrid','on')
-
-    % basic parameters
-    albatross_parameters_maritime;
-    %albatross_parameters_airfield;
-
+    
     % convert variables to imperial for equations
-    S = S*10.7639; % ft^2
+    S_ft = S*10.7639; % ft^2
 
 
     L = 16; % m - fuselage length
-    H = 2.5; % m - fueslage height
-    rearWing = 0.45;
+    H = 1.75; % m - fueslage height
     cg_var = 0.45; % start cg position
-    inFuel_loc = 0.45; % internal fuel position
+    rearWing = cg_var;
+    inFuel_loc = cg_var; % internal fuel position
 
     %% Basic Weights
     % masses in lb for calculations
@@ -73,22 +76,22 @@ for k = 1:length(pl_vec)
     Kinl = 1.25; % for inlets in fuselage
     q = 0.5*rho0*V^2*0.02088547; % lb/ft^2 - max dynamic pressure
     tailAngle = 30; % deg
-    Mland = MTOW/2; % lb - max landing weight
+    Mland = MTOW/1.5; % lb - max landing weight
     Ln = 39.3701; % in - nose landing gear
     Lm = 39.3701; % in - main landing gear weight 
     %fuselageWeight = 10.43*Kinl^1.42*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.71; % USAF/Commercial - Nicolai
     fuselageWeight = 11.03*Kinl^1.23*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.61; % USN - Nicolai
-    wingWeight = 0.00428*S^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai
+    wingWeight = 0.00428*S_ft^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai
     vertTailWeight = 0.0034*((MTOW*n)^0.813*Sht^0.584*(bht/trht)^0.033*(c_bar*Lt)^0.28)^0.915; % Nicolai - scale since have V tail
     horiTailWeight = 0.19*((MTOW*n)^0.363*Svt^1.089*M0^0.601*Lt^(-0.726)*(1+Sr/Svt)^0.217*ARvt^0.337*(1+taper_rvt)^0.363*(cosd(sweepvt)^(-0.484)))^1.014; % Nicolai - scale since have v tail
     tailWeight = vertTailWeight*sind(tailAngle)^2+horiTailWeight*cosd(tailAngle)^2; % lb - scale since using V tail https://vtechworks.lib.vt.edu/bitstream/handle/10919/26482/Dissertation3a.pdf?sequence=1&isAllowed=y
     frontGearWeight = 0.125*(Mland*n)^0.566*(Ln/12)^0.845; % Nicolai according to Gudmundsson
-    rearGearWeight = 0.054*(Mland*n)^0.684*(Lm/12)^0.601; % Nicolai according to Gudmundsson
+    rearGearWeight = 2*0.054*(Mland*n)^0.684*(Lm/12)^0.601; % Nicolai according to Gudmundsson
 
-    basic(1) = weightClass(          'Fuselage',  fuselageWeight,      0.5, L);
+    basic(1) = weightClass(          'Fuselage',  fuselageWeight,     0.5, L);
     basic(2) = weightClass(         'Main Wing',      wingWeight, rearWing, L);
     basic(3) = weightClass(              'Tail',      tailWeight,     0.95, L);
-    basic(4) = weightClass('Front Landing Gear', frontGearWeight,      0.2, L);
+    basic(4) = weightClass('Front Landing Gear', frontGearWeight,     0.25, L);
     basic(5) = weightClass( 'Rear Landing Gear',  rearGearWeight,      0.8, L);
     basic.lb2kg; % convert masses from lb to kg
     [basicWeight, basicMoment] = basic.totalWM;
@@ -123,21 +126,20 @@ for k = 1:length(pl_vec)
     pneumaticTP = 12.05*(ne*engineWeight*10^-3)^1.458;
     propellerControls = 0.322*nb^0.589*(np*dp*hp*10^-3)^1.178; % propeller controls - turboprop engine
 
-    prop(1)  = weightClass(               'Engine',    engineWeight,    0.3, L);
-    prop(2)  = weightClass(     'Propeller Blades',      20*2.20462,      0, L);
-    prop(3)  = weightClass(    'Propeller Gearbox',     100*2.20462,   0.05, L);
-    prop(4)  = weightClass('Propeller Drive Shaft',      30*2.20462,   0.18, L);
-    prop(5)  = weightClass(         'Rotor Blades', 4*113.3*2.20462, cg_var, L); % need to adjust time calculation for storing rotor 
-    prop(6)  = weightClass(        'Rotor Gearbox',     750*2.20462, cg_var*1.25, L);
-    prop(7)  = weightClass(          'Rotor Shaft',      120*2.20462,cg_var, L);
+    prop(1)  = weightClass(               'Engine',    engineWeight,   0.22, L);
+    prop(2)  = weightClass(     'Propeller Blades',      50*2.20462,  0.003, L);
+    prop(3)  = weightClass('Propeller Drive Shaft',       0*2.20462,   0, L);
+    prop(4)  = weightClass(         'Rotor Blades', 4*113.3*2.20462, cg_var, L); % need to adjust time calculation for storing rotor 
+    prop(5)  = weightClass(        'Rotor Gearbox',     750*2.20462, cg_var*1.25, L);
+    prop(6)  = weightClass(          'Rotor Shaft',      120*2.20462,cg_var*0.9, L);
 
-    prop(8)  = weightClass(                 'Duct',         totalDuct,          0, L);
-    prop(9)  = weightClass(       'Engine Control',     engineControl,        0.7, L);
-    prop(10) = weightClass(       'Pneumatic (TP)',       pneumaticTP,       0.15, L);
-    prop(11) = weightClass(   'Propeller Controls', propellerControls,       0.15, L);
-    prop(12) = weightClass(  'Fuel System Bladder',      totalBladder, inFuel_loc, L);
-    prop(13) = weightClass(     'Fuel Dump System',         dumpDrain,   rearWing, L);
-    prop(14) = weightClass(      'Fuel CG Control',     cgFuelControl,       0.7, L);
+    prop(7)  = weightClass(                 'Duct',         totalDuct,          0, L);
+    prop(8)  = weightClass(       'Engine Control',     engineControl,        0.7, L);
+    prop(9) = weightClass(       'Pneumatic (TP)',       pneumaticTP,         0.2, L);
+    prop(10) = weightClass(   'Propeller Controls', propellerControls,        0.2, L);
+    prop(11) = weightClass(  'Fuel System Bladder',      totalBladder, inFuel_loc, L);
+    prop(12) = weightClass(     'Fuel Dump System',         dumpDrain,       0.6, L);
+    prop(13) = weightClass(      'Fuel CG Control',     cgFuelControl,      0.75, L);
 
     prop.lb2kg; % convert masses from lb to kg
     [propWeight, propMoment] = prop.totalWM;
@@ -146,8 +148,8 @@ for k = 1:length(pl_vec)
     %% Payload Weights
     % masses in kg
     % fixed equipment weights (check if greater than 500 kg internal payload
-    payload(1) = weightClass(         'MX-20',                          90,      0.8, L);
-    payload(2) = weightClass(      'Lynx SAR',                          57,      0.7, L);
+    payload(1) = weightClass(         'MX-20',                          90,      0.9, L);
+    payload(2) = weightClass(      'Lynx SAR',                          38,      0.8, L);
     payload(3) = weightClass('Other Internal PL', 500-payload(1:2).totalWM,      0.9, L); % the rest of the 500kg internal payload
     payload(4) = weightClass(      'External PL',               pl_num-500, rearWing, L);
     [payloadWeight, payloadMoment] = payload.totalWM;
@@ -161,11 +163,6 @@ for k = 1:length(pl_vec)
     fuel(2) = weightClass('Internal Fuel Flight', internalFuelWeight, inFuel_loc, L);
     [fuelWeight, fuelMoment] = fuelStart.totalWM;
     fprintf('total fuel:      %.0f kg | %.0f kgm\n\n',fuelWeight,fuelMoment);    
-%     fuelStart(1) = weightClass(      'Wing Fuel',     0,   rearWing, L);
-%     fuelStart(2) = weightClass(  'Internal Fuel',    0, inFuel_loc, L);
-%     fuel(1) = weightClass(    'Wing Fuel Flight',     0,   rearWing, L);
-%     fuel(2) = weightClass('Internal Fuel Flight', 0, inFuel_loc, L);
-%     [fuelWeight, fuelMoment] = fuelStart.totalWM;
 
     %%
     totalWeight(1) = basicWeight + propWeight + payloadWeight + fuelWeight;

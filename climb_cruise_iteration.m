@@ -61,7 +61,7 @@ while abs(TOW_new - TOW)/TOW > 1e-5
 
         if t >= endurance_target/2  && counter_2 == 0 
 
-            PL_dropped = PL + 500;
+            PL_dropped = PL - 500;
 
             w = w - PL_dropped; %loose PL
 
@@ -186,7 +186,7 @@ end
 
         if t(i) >= endurance_target/2  && counter_2 == 0 
 
-            PL_dropped = PL + 500;
+            PL_dropped = PL - 500;
 
             w(i) = w(i) - PL_dropped; %loose PL
 
