@@ -12,7 +12,7 @@ albatross_parameters_airfield
 
 pl_vector = linspace(3500,3500,1);
 
-%en_vector = linspace(24,34,10); 
+%en_vector = linspace(24,24,1); 
 en_vector = linspace(40,40,1); 
 
 %Wait bar for sanity
@@ -40,6 +40,9 @@ for m_index = 1:length(pl_vector)
         T_max_results(m_index,n_index)  = max(Thrust);
         P_max_results(m_index,n_index)  = max((Thrust.*v)/prop_n);
         WL_max_results(m_index,n_index) = TOW/S;
+        BSFC_results(m_index,n_index) = mean(BSFC);
+        FF_mean_results(m_index,n_index) = mean(BSFC)*mean(Power)*60*60;
+       
       
         % Wait bar
 
@@ -90,7 +93,7 @@ end
 
 %assumptions box
 
-assumptions = sprintf('cdo: %.4f, TSFC: %.6f, e: %.2f, alt: %.0f ft, S: %.0f m^2, AR: %.0f, Cruise: %.0f kts , Loiter: %.0f kts ', cdo,TSFC,e,cruise_alt*3.281,S,AR,convvel(v_cruise,'m/s','kts'),convvel(v_loiter,'m/s','kts'));
+assumptions = sprintf('cdo: %.4f, Mean FF: %.0f kg/hr, e: %.2f, alt: %.0f ft, S: %.0f m^2, AR: %.0f, Speed: Min drag ', cdo,mean(mean(FF_mean_results)),e,cruise_alt*3.281,S,AR);
 
 annotation('textbox',...
     [0.33 0.86 0.21 0.05],...
@@ -99,11 +102,9 @@ annotation('textbox',...
     'FontSize',12,...
     'FitBoxToText','off');
 
-
-
 % Plot mission lines
 
- plot(mission_1_x,mission_1_y,'--','color','k','linewidth',3)
+plot(mission_1_x,mission_1_y,'--','color','k','linewidth',3)
 
 plot(mission_2_x,mission_2_y,'--','color','k','linewidth',3)
 
