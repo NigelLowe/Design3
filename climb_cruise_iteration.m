@@ -47,8 +47,8 @@ while abs(TOW_new - TOW)/TOW > 1e-5
     counter_2  = 0; %counter for sake of PL drop
 
     PL_dropped = 0;
-  
-    
+ 
+            
     while t <= endurance_target
 
         %determine ambients (Linear - No account for Tropo)
@@ -70,62 +70,54 @@ while abs(TOW_new - TOW)/TOW > 1e-5
             counter_2 = counter_2 + 1;
 
         end 
+        
+        %fly at min drag speed
+        cl = sqrt(cdo/k);
 
         L    = w*g; %N - Small angle assumption for climb
 
-        % determine if aircraft in climb or cruise phase
+        %P_max = (2E-05*(alt)^2 - 0.7208*(alt) + 8146.2)*1e3;
 
         if alt < cruise_alt
 
-            cl = cl_climb;
-
-            %Climb phase - Climb at min l_d
-
-            D = L/ld_climb;
-
-            v = (L/(0.5*cl*rho*S))^0.5; %m/s
-
-           
-            %Determine Thrust req. (from excess power eqn.)
-
-            Thrust = target_roc*w*g/v+D;
-
-            alt = alt + (Thrust - D)*v/L*time_res*3600;  %m, time res is in hrs
+                v = (L/(0.5*rho*S*cl))^0.5;
+                
+                cd   = cdo + k*(cl-clmin)^2;
+            
+                D = cd*(0.5*rho*S*v^2);
+                
+                Thrust = target_roc*L/v+D;
+                
+                Power = Thrust*v/prop_n;
+                
+                alt = alt + (Thrust - D)*v/L*time_res*3600;  %m, time res is in hrs
       
         else %Cruise or Loiter (aircraft needs to be at cruising level)
             
-           if t < t_loiter_start || t > t_loiter_end  %cruise out or back
-
-            cl= L/(0.5*rho*S*v_cruise^2);
-
-            cd   = cdo + k*(cl-clmin)^2;
-
-            Thrust = cd*(0.5*rho*S*v_cruise^2);
+            v= (L/(0.5*rho*S*cl))^0.5;
             
-           else
-            
-            %fly at min drag speed
-            cl = sqrt(cdo/k);
-               
-            v_loiter= (L/(0.5*rho*S*cl))^0.5;
-
             cd   = cdo + k*(cl-clmin)^2;
+            
+            Thrust = cd*(0.5*rho*S*v^2);
 
-            Thrust = cd*(0.5*rho*S*v_loiter^2);
-                  
-           end
-           
+            Power = Thrust*v/prop_n;
+            
+            alt = alt;
+            
         end
-
-    
-
+        
+        
         %Fuel
 
         %(ff = Thrust*TSFC; % fuel flow)
 
         %(fused(i) = Thrust*TSFC*time_res*3600; %kg, as time res is in hrs)
+        
+%         TSFC = 0.19/(3600*1e3)*v/prop_n*2;
 
-        w = w - Thrust*TSFC*time_res*3600; %end of segement fuel
+        BSFC = 1.0*(1e-17*(alt)^4 - 1e-13*(alt)^3 + 1e-09*(alt)^2 + 2e-07*(alt) + 0.2285)*1/(60*60*1e3);
+
+        w = w - Power*BSFC*time_res*3600; %end of segement fuel
 
         t = t + time_res; 
 
@@ -174,7 +166,7 @@ end
     
     i = 1;
 
-    while t(i) <= endurance_target
+     while t(i) <= endurance_target
 
         %determine ambients (Linear - No account for Tropo)
 
@@ -182,9 +174,9 @@ end
 
         press= P0*(temp/T0)^(g/L_r/R);
 
-        rho  = press/(R*temp);
+        rho(i)  = press/(R*temp);
 
-        if t(i) >= endurance_target/2  && counter_2 == 0 
+        if t(i)>=endurance_target/2  && counter_2 == 0 
 
             PL_dropped = PL - 500;
 
@@ -195,74 +187,62 @@ end
             counter_2 = counter_2 + 1;
 
         end 
+        
+        %fly at min drag speed
+        cl(i) = sqrt(cdo/k);
 
         L(i)    = w(i)*g; %N - Small angle assumption for climb
 
-        % determine if aircraft in climb or cruise phase
+%         P_max = (2E-05*(alt(i))^2 - 0.7208*(alt(i)) + 8146.2)*1e3;
 
-        if alt < cruise_alt
+       if alt(i) < cruise_alt
 
-            cl(i) = cl_climb;
-
-            %Climb phase - Climb at min l_d
-
-            D(i) = L(i)/ld_climb;
-
-            v(i) = (L(i)/(0.5*cl(i)*rho*S))^0.5; %m/s
-
-           
-            %Determine Thrust req. (from excess power eqn.)
-
-            Thrust(i) = target_roc*w(i)*g/v(i)+D(i);
-
-            alt(i+1) = alt(i) + (Thrust(i) - D(i))*v(i)/L(i)*time_res*3600;  %m, time res is in hrs
+                v(i) = (L(i)/(0.5*rho(i)*S*cl(i)))^0.5;
+                
+                cd(i)   = cdo + k*(cl(i)-clmin)^2;
+            
+                D(i) = cd(i)*(0.5*rho(i)*S*v(i)^2);
+                
+                Thrust(i) = target_roc*L(i)/v(i)+D(i);
+                
+                Power(i) = Thrust(i)*v(i)/prop_n;
+                
+                alt(i+1) = alt(i) + (Thrust(i) - D(i))*v(i)/L(i)*time_res*3600;  %m, time res is in hrs
       
         else %Cruise or Loiter (aircraft needs to be at cruising level)
             
-           if t(i) < t_loiter_start || t(i) > t_loiter_end  %cruise out or back
-
-            cl(i) = L(i)/(0.5*rho*S*v_cruise^2);
-
+            v(i)= (L(i)/(0.5*rho(i)*S*cl(i)))^0.5;
+            
             cd(i)   = cdo + k*(cl(i)-clmin)^2;
+            
+            Thrust(i) = cd(i)*(0.5*rho(i)*S*v(i)^2);
 
-            Thrust(i) = cd(i)*(0.5*rho*S*v_cruise^2);
-            
-            v(i) = v_cruise;
-            
-            alt(i+1) = alt(i); 
-            
-           else
-               
-            %fly at min drag speed
-            cl(i) = sqrt(cdo/k);
-               
-            v_loiter = (L(i)/(0.5*rho*S*cl(i)))^0.5;
-
-            cd(i)   = cdo + k*(cl(i)-clmin)^2;
-
-            Thrust(i) = cd(i)*(0.5*rho*S*v_loiter^2);
-            
-            v(i) = v_loiter;
+            Power(i) = Thrust(i)*v(i)/prop_n;
             
             alt(i+1) = alt(i);
             
-           end
-           
         end
-
-    
-
+        
+        
         %Fuel
 
         %(ff = Thrust*TSFC; % fuel flow)
 
-        fused(i) = Thrust(i)*TSFC*time_res*3600; %kg, as time res is in hrs)
+        %(fused(i) = Thrust*TSFC*time_res*3600; %kg, as time res is in hrs)
+        
+%         TSFC = 0.19/(3600*1e3)*v/prop_n*2;
 
-        w(i+1) = w(i) - fused(i); %end of segement fuel
+        BSFC(i) = 1.0*(1e-17*(alt(i))^4 - 1e-13*(alt(i))^3 + 1e-09*(alt(i))^2 + 2e-07*(alt(i)) + 0.2285)*1/(60*60*1e3);
+        
+        TSFC(i) = BSFC(i)*Power(i)/Thrust(i);
 
-        t(i+1) = t(i) + time_res;
+        w(i+1) = w(i) - BSFC(i)*Power(i)*time_res*3600; %end of segement fuel
+
+        t(i+1) = t(i) + time_res; 
         
         %advance referencing parameter
         i = i + 1; 
-        
+
     end
+        
+       
