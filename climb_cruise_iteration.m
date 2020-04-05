@@ -228,7 +228,6 @@ end
 
         %(ff = Thrust*TSFC; % fuel flow)
 
-        %(fused(i) = Thrust*TSFC*time_res*3600; %kg, as time res is in hrs)
         
 %         TSFC = 0.19/(3600*1e3)*v/prop_n*2;
 
@@ -236,6 +235,8 @@ end
         
         TSFC(i) = BSFC(i)*Power(i)/Thrust(i);
 
+        fused(i) = Thrust(i)*TSFC(i)*time_res*3600; %kg, as time res is in hrs)
+        
         w(i+1) = w(i) - BSFC(i)*Power(i)*time_res*3600; %end of segement fuel
 
         t(i+1) = t(i) + time_res; 

@@ -5,8 +5,8 @@ if ~exist('plotOtherGraphs','var') % if statement for this file use in other fun
     clear
     
     % general parameters
-    albatross_parameters_maritime;
-    %albatross_parameters_airfield;
+    %albatross_parameters_maritime;
+    albatross_parameters_airfield;
 end
 clc
 close all
@@ -98,7 +98,7 @@ rho_fuel = 804; % kg/m^3
 % sums area inside aerofoil, then scales x and y by multiplying by local
 % chord c, and gets volume of element with xDelta  
 wingArea = sum((nasa1015top(1:end-1)-nasa1015bottom(1:end-1)).*diff(nasa1015x));
-volumeWing = sum(wingArea * c.^2*xDelta) * 0.7; % 70% of wing available for fuel usage
+volumeWing = sum(wingArea * c.^2*xDelta) * 0.7*0.4; % 70% of wing available for fuel usage, 40% length of wing used (no fuel in folding part)
 wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta;
 fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
 

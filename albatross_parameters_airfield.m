@@ -33,7 +33,7 @@ target_roc      = cruise_alt/reach_toc/3600; %m/s
 ld_climb        = 1/(2*sqrt(k*cdo)); %min l_d
 cl_climb        = sqrt(pi*AR*cdo*e);
 
-clmax = 1.8;
+clmax = 2;
 clmin = 0.2; 
 cd0 = cdo;    % with payload drag coefficient
 cd0c = 0.021; % no external payload drag coefficient
