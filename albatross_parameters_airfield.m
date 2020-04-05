@@ -23,11 +23,11 @@ empty_weight = 5200;  % Used when BEW is fixed
 isa_dev = 0; %degrees
 
 %mission parameters
-reach_toc       = 3;  %hrs
+reach_toc       = 4;  %hrs
 cruise_alt      = 35000/3.281; %m
 loiter_point    = 4000e3; %4000 km
-v_cruise        = convvel(250,'kts','m/s');
-v_loiter        = convvel(200,'kts','m/s');
+% v_cruise        = convvel(250,'kts','m/s');
+% v_loiter        = convvel(200,'kts','m/s');
 
 target_roc      = cruise_alt/reach_toc/3600; %m/s
 ld_climb        = 1/(2*sqrt(k*cdo)); %min l_d

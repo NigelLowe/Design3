@@ -25,7 +25,7 @@ alt_dev = 0; %ft
 reach_toc       = 4;  %hrs
 cruise_alt      = 35000/3.281; %m
 loiter_point    = 1500e3; %4000 km
-v_cruise        = convvel(250,'kts','m/s');
+%v_cruise        = convvel(250,'kts','m/s');
 %v_loiter        = convvel(200,'kts','m/s');
 
 target_roc      = cruise_alt/reach_toc/3600; %m/s
@@ -41,13 +41,13 @@ cd0c = 0.028; % no external payload drag coefficient
 
 % requirement 1 MAX PL
 
-mission_1_x = [22 22];
+mission_1_x = [24 24];
 
 mission_1_y = [0 18.0e3];
 
 % requirement 2 50 hrs (reduced)
 
-mission_2_x = [32 32];
+mission_2_x = [34 34];
 
 mission_2_y = [0 18.0e3];
 
@@ -55,6 +55,6 @@ mission_2_y = [0 18.0e3];
 
 mission_3_x = [10 55];
 
-mission_3_y = [18.0e3 18.0e3];
+mission_3_y = [18.5e3 18.5e3];
 
-x_lim_plot = [22-1 32+1];
+x_lim_plot = [24-1 34+1];

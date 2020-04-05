@@ -25,10 +25,9 @@ delta_counter = 0; %to avoid infinte loop
 
 time_res   = endurance_target/n_time_pts; %hrs
 
-
-% Mission schedule (in hrs)
-t_loiter_start = (loiter_point/v_cruise)/3600;
-t_loiter_end   = (endurance_target - t_loiter_start);
+% % Mission schedule (in hrs)
+% t_loiter_start = (loiter_point/v_cruise)/3600;
+% t_loiter_end   = (endurance_target - t_loiter_start);
 
 while abs(TOW_new - TOW)/TOW > 1e-5
 
@@ -41,6 +40,8 @@ while abs(TOW_new - TOW)/TOW > 1e-5
     w_initial  = TOW;
 
     t          = 0; % set time to 0
+    
+    d          = 0; %mark distance flown
 
     alt        = 0; % set altitude to 0
 
@@ -118,6 +119,8 @@ while abs(TOW_new - TOW)/TOW > 1e-5
         BSFC = 1.0*(1e-17*(alt)^4 - 1e-13*(alt)^3 + 1e-09*(alt)^2 + 2e-07*(alt) + 0.2285)*1/(60*60*1e3);
 
         w = w - Power*BSFC*time_res*3600; %end of segement fuel
+        
+        d = d + v*t;
 
         t = t + time_res; 
 
@@ -156,7 +159,9 @@ end
 
     w(1)       = TOW;
 
-    t(1)       = 0; % set time to 0
+    t(1)       = 0; % set time to 0  
+    
+    d(1)       = 0;
 
     alt(1)     = 0; % set altitude to 0
 
@@ -212,7 +217,7 @@ end
         else %Cruise or Loiter (aircraft needs to be at cruising level)
             
             v(i)= (L(i)/(0.5*rho(i)*S*cl(i)))^0.5;
-            
+           
             cd(i)   = cdo + k*(cl(i)-clmin)^2;
             
             Thrust(i) = cd(i)*(0.5*rho(i)*S*v(i)^2);
@@ -233,17 +238,28 @@ end
 
         BSFC(i) = 1.0*(1e-17*(alt(i))^4 - 1e-13*(alt(i))^3 + 1e-09*(alt(i))^2 + 2e-07*(alt(i)) + 0.2285)*1/(60*60*1e3);
         
+        fused(i) = BSFC(i)*Power(i)*time_res*3600; %kg, as time res is in hrs)
+        
         TSFC(i) = BSFC(i)*Power(i)/Thrust(i);
 
         fused(i) = Thrust(i)*TSFC(i)*time_res*3600; %kg, as time res is in hrs)
         
         w(i+1) = w(i) - BSFC(i)*Power(i)*time_res*3600; %end of segement fuel
-
+       
         t(i+1) = t(i) + time_res; 
+        
+        d(i+1) = d(i) + v(i)*time_res*3600;
         
         %advance referencing parameter
         i = i + 1; 
 
-    end
-        
+     end
+     
+     [ ~, loiter_start_t ] = min(abs( d-loiter_point));
+     loiter_start_t = t(loiter_start_t);
+     
+     [ ~, loiter_end_t ] = min(abs( d-(max(d)-loiter_point)));
+     loiter_end_t = t(loiter_end_t);
+      
+     useful_loiter = loiter_end_t - loiter_start_t;
        

@@ -13,7 +13,6 @@ clc
 %Vectors of PL and Endurance
 
 pl_vector = linspace(3500,3500,1);
-
 %en_vector = linspace(24,34,10); 
 en_vector = linspace(20,40,10); 
 
@@ -47,6 +46,9 @@ for m_index = 1:length(pl_vector)
         T_max_results(m_index,n_index)  = max(Thrust);
         P_max_results(m_index,n_index)  = max((Thrust.*v)/prop_n);
         WL_max_results(m_index,n_index) = TOW/S;
+        BSFC_results(m_index,n_index) = mean(BSFC);
+        FF_mean_results(m_index,n_index) = mean(BSFC)*mean(Power)*60*60;
+       
       
         % Wait bar
 
