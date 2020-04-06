@@ -1,0 +1,61 @@
+#-------------------------------------------------
+#  albatross trial
+#
+#  Dimensional unit and parameter data.
+#  Mass & Inertia breakdown.
+#-------------------------------------------------
+
+#  Names and scalings for units to be used for trim and eigenmode calculations.
+#  The Lunit and Munit values scale the mass, xyz, and inertia table data below.
+#  Lunit value will also scale all lengths and areas in the AVL input file.
+Lunit = 1 m
+Munit = 1  kg
+Tunit = 1.0    s
+
+#------------------------- 
+#  Gravity and density to be used as default values in trim setup (saves runtime typing).
+#  Must be in the unit names given above (m,kg,s).
+g   = 9.81
+rho = 0.301559
+
+#-------------------------
+#  Mass & Inertia breakdown.
+#  x y z  is location of item's own CG.
+#  Ixx... are item's inertias about item's own CG.
+#
+#  x,y,z system here must be exactly the same one used in the .avl input file
+#     (same orientation, same origin location, same length units)
+#
+#  mass   x     y     z       Ixx   Iyy   Izz    Ixy  Ixz  Iyz
+#
+    0.0   0.00  0.00  2.50    0     0     0      ! Propeller Drive Shaft       
+ 0.5845   0.00  0.00  2.50    0     0     0      ! Duct       
+49.9999  0.048  0.00  2.50    0     0     0      ! Propeller Blades
+44.1255    3.2  0.00  2.50    0     0     0      ! Pneumatic (TP)
+69.5321    3.2  0.00  2.50    0     0     0      ! Propeller Controls       
+  950.0   3.52  -4.0  3.50    0     0     0      ! Left Engine
+  950.0   3.52   4.0  3.50    0     0     0      ! Right Engine        
+122.5585  4.00  0.00  3.50    0     0     0      ! Front Landing Gear
+ 59.9999  6.48  -4.0  3.50    0     0     0      ! Left Rotor Shaft
+ 59.9999  6.48   4.0  3.50    0     0     0      ! Right Rotor Shaft
+402.0192  6.70  -5.5  4.00    0     0     0      ! Left Main Wing
+402.0192  6.70   5.5  4.00    0     0     0      ! Right Main Wing       
+226.5996  7.20  -4.0  3.50    0     0     0      ! Left Rotor Blades
+226.5996  7.20   4.0  3.50    0     0     0      ! Right Rotor Blades        
+252.7120  7.20  0.00  4.00    0     0     0      ! Fuel System Bladder
+    0.0   7.20     0  3.50    0     0     0      ! External PL
+ 2297.9   7.20  -5.5  4.00    0     0     0      ! Left Wing Fuel
+ 2297.9   7.20   5.5  4.00    0     0     0      ! Right Wing Fuel
+10220.0   7.20  0.00  3.50    0     0     0      ! Internal Fuel 
+988.3109  8.00     0  5.00    0     0     0      ! Fuselage
+374.9992  9.00  -4.0  3.50    0     0     0      ! Left Rotor Gearbox
+374.9992  9.00   4.0  3.50    0     0     0      ! Right Rotor Gearbox       
+18.0218   9.60  0.00  3.50    0     0     0      ! Fuel Dump System        
+ 1.5190   11.2  0.00  3.50    0     0     0      ! Engine Control
+ 82.7996  12.0  0.00  3.50    0     0     0      ! Fuel CG Control
+318.6339  12.8  0.00 0.875    0     0     0      ! Rear Landing Gear
+   38.0   12.8  0.00  2.50    0     0     0      ! Lynx SAR       
+   90.0   14.4  0.00  2.50    0     0     0      ! MX-20        
+  372.0   14.4  0.00  3.50    0     0     0      ! Other Internal PL
+129	      14.2  0.00  7.00    0     0     0      ! Tail
+
