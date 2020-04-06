@@ -20,12 +20,12 @@ t_vec = [];
 cg_percent_vec = [];
 
 row = 0;
-missionType = {'maritime', 'airfield'};
+missionType = {'Maritime', 'Airfield'};
 for mission = missionType
 % basic parameters
-    if strcmp(mission,'maritime')
+    if strcmp(mission,'Maritime')
         albatross_parameters_maritime;
-    elseif strcmp(mission,'airfield')
+    elseif strcmp(mission,'Airfield')
         albatross_parameters_airfield;
     end
     row = row + 1;
@@ -33,7 +33,7 @@ for mission = missionType
     
     for m = 1:length(pl_vec)
         pl_num = pl_vec(m);
-        if strcmp(mission,'airfield')
+        if strcmp(mission,'Airfield')
             m = m + 2;
         end
         en_num = en_vec(m);
@@ -46,7 +46,7 @@ for mission = missionType
         clc;
         clearvars -except row col mission missionType internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
-
+        disp(mission);
         fprintf('%.0f kg payload | %.0f hr endurance\n', pl_num, en_num);
 
         % set default figure parameters
@@ -72,7 +72,7 @@ for mission = missionType
         M0 = 120/340; % max flight at sea level
         n = 4.5; % max load factor
         tc_ratio = 0.15;
-        c_bar = mean(c); % mean aerodynamic chord of wing
+        c_bar = 2.31; %mean(c); % mean aerodynamic chord of wing
         Lt = (1-rearWing)*L*3.28084; % ft - tail moment arm 
         sweep = 0; % deg
         tailAngle = 39; % deg
@@ -110,7 +110,7 @@ for mission = missionType
 
         basic(1) = weightClass(              'Fuselage',  fuselageWeight,     0.5, L);
         basic(2) = weightClass(             'Main Wing',      wingWeight, rearWing, L); % multiplied by 1.75 for folding mechanism
-        basic(3) = weightClass(                  'Tail',      tailWeight,     0.95, L);
+        basic(3) = weightClass(                  'Tail',      tailWeight,     0.96, L);
         basic(4) = weightClass(    'Front Landing Gear', frontGearWeight,      0.2, L);
         basic(5) = weightClass(     'Rear Landing Gear',  rearGearWeight,      0.7, L);
         basic.lb2kg; % convert masses from lb to kg
@@ -138,7 +138,8 @@ for mission = missionType
         totalDuct = duct + internalDuct;
         engineControl = 4.079*(Ni*Lr*Ai^0.5*Kte)^1.201;
         totalFuelWeight = sum(wingFuelWeight)+internalFuelWeight;
-        totalFuelGallons = totalFuelWeight/rho_fuel*1000*0.214172; % Imperial gallon (should be US (0.26) but dont want a bigger value)
+        maxFuelWeight = 18341; % max fuel - so the below vaues are the same for all cases
+        totalFuelGallons = maxFuelWeight/rho_fuel*1000*0.214172; % Imperial gallon (should be US (0.26) but dont want a bigger value)
         bladderCells = 23.1*(totalFuelGallons*10^-2)^0.758; % non-self sealing bladder cells
         cellSupports = 7.91*(totalFuelGallons*10^-2)^0.854; % fuel system bladder cell backing and supports
         totalBladder = bladderCells + cellSupports;
@@ -147,22 +148,22 @@ for mission = missionType
         pneumaticTP = 12.05*(ne*engineWeight*10^-3)^1.458;
         propellerControls = 0.322*nb^0.589*(np*dp*hp*10^-3)^1.178; % propeller controls - turboprop engine
 
-        prop(1)  = weightClass(               'Engine',    engineWeight, 0.181, L);
+        prop(1)  = weightClass(               'Engine',    engineWeight,  0.19, L);
         prop(2)  = weightClass(     'Propeller Blades',     100*2.20462, 0.003, L);
         prop(3)  = weightClass('Propeller Drive Shaft',       0*2.20462,     0, L);
 
         prop(4)  = weightClass(              'Duct',         totalDuct,   0.05, L);
         prop(5)  = weightClass(    'Engine Control',     engineControl,    0.7, L);
-        prop(6) = weightClass(     'Pneumatic (TP)',       pneumaticTP,    0.2, L);
-        prop(7) = weightClass( 'Propeller Controls', propellerControls,    0.2, L);
-        prop(8) = weightClass('Fuel System Bladder',      totalBladder, inFuel, L);
-        prop(9) = weightClass(   'Fuel Dump System',         dumpDrain,   0.65, L);
+        prop(6)  = weightClass(     'Pneumatic (TP)',       pneumaticTP,    0.2, L);
+        prop(7)  = weightClass( 'Propeller Controls', propellerControls,    0.2, L);
+        prop(8)  = weightClass('Fuel System Bladder',      totalBladder, inFuel, L);
+        prop(9)  = weightClass(   'Fuel Dump System',         dumpDrain,  0.675, L);
         prop(10) = weightClass(   'Fuel CG Control',     cgFuelControl,   0.75, L);
 
-        if strcmp(mission, 'airfield')  %cg_var
-            prop(11)  = weightClass( 'Rotor Blades', 4*113.3*2.20462, 0.38, L); % need to adjust time calculation for storing rotor 
-            prop(12)  = weightClass('Rotor Gearbox',     750*2.20462, 0.38, L);
-            prop(13)  = weightClass(  'Rotor Shaft',      120*2.20462,0.38*0.9, L);
+        if strcmp(mission, 'Maritime')  %cg_var
+            rotorPos = 0.45;
+            prop(11)  = weightClass( 'Rotor Blades', 4*113.3*2.20462,     rotorPos, L); % includes gearbox
+            prop(12)  = weightClass(  'Rotor Shaft',     120*2.20462, rotorPos*0.9, L);
         end
         prop.lb2kg; % convert masses from lb to kg
         [propWeight, propMoment] = prop.totalWM;
@@ -179,7 +180,8 @@ for mission = missionType
         fprintf('total payload:     %.0f kg | %.0f kgm\n', payloadWeight,payloadMoment);
 
         %% Fuel Weight
-        % masses in kg
+        % masses in kg %inFuel
+        inFuel = 0.49;
         fuelStart(1) = weightClass(      'Wing Fuel',     wingFuelWeight, rearWing, L);
         fuelStart(2) = weightClass(  'Internal Fuel', internalFuelWeight,   inFuel, L);
         fuel(1) = weightClass(    'Wing Fuel Flight',     wingFuelWeight, rearWing, L);
@@ -228,11 +230,13 @@ for mission = missionType
         insideFuel = [insideFuel; internalFuelWeight totalFuelWeight totalFuelWeight*1000/rho_fuel]; % inside fuel (kg), total fuel (kg), total fuel (Litres)
         
         t_vec{row,col} = (0:length(fused))*time_res;
-        cg_percent_vec{row,col} = cg/L*100;
+        x_ac = 7.1;
+        cg_percent_vec{row,col} = (cg - x_ac)/c_bar; %cg/L*100;
         
     end
 end
-    
+
+%%
 arraySize = size(cg_percent_vec,1);
 
 figure(1)
@@ -242,7 +246,7 @@ for j = 1:arraySize
     legend_labels{j} = sprintf('%.0f kg.', pl_vec(j));
     hold on
 end
-legend(legend_labels,'location','NW')
+legend(legend_labels,'location','NE')
 xlabel('endurance (hr)')
 ylabel('cg location aft of nose (%)')
 title(missionType{1})
@@ -252,7 +256,7 @@ for j = 1:arraySize %arraySize/2+1:arraySize
     plot(t_vec{2,j},cg_percent_vec{2,j},'linewidth',3)
     hold on
 end
-legend(legend_labels,'location','NW')
+legend(legend_labels,'location','NE')
 xlabel('endurance (hr)')
 ylabel('cg location aft of nose (%)')
 title(missionType{2})
@@ -276,3 +280,8 @@ InOrderWeights = valuesW(sortIdx);
 front2BackLocations = [InOrderNames; num2cell(InOrderLocation); num2cell(InOrderWeights)];
 disp('       Object name     | location (n.d.) | weight (kg)')
 disp(front2BackLocations');
+
+
+%%
+VfuelMax = max(insideFuel(:,1))/rho_fuel;
+h = VfuelMax/((pi*2.2*1.75)/4)
