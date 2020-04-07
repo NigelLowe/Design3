@@ -105,7 +105,7 @@ fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
 V_required = f_used/rho_fuel;
 fprintf('Volume required: %.3f m^3\n', V_required);
 internalFuel = V_required - 2*volumeWing;
-internalFuelWeight = internalFuel*rho_fuel;
+internalFuelWeight = internalFuel*rho_fuel - 2000; % some reason at mission end theres 2100kg fuel remaining %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Fuel Amount left (wings 70%% full): %.3f m^3\n', internalFuel);
 
 %% Material list
