@@ -2,8 +2,8 @@ if ~exist('plotOtherGraphs','var') % if statement for this file to be used in ot
     clear all
     
     % Call parameters
-    %albatross_parameters_maritime
-    albatross_parameters_airfield
+    albatross_parameters_maritime
+    %albatross_parameters_airfield
 end 
 close all,
 clc
@@ -12,9 +12,9 @@ clc
 
 %Vectors of PL and Endurance
 
-pl_vector = linspace(3500,3500,1);
-%en_vector = linspace(24,34,10); 
-en_vector = linspace(20,40,10); 
+pl_vector = linspace(500,3500,2);
+en_vector = linspace(24,34,10); 
+%en_vector = linspace(38,53,10); 
 
 if exist('plotOtherGraphs','var') % if statement for this file to be used in other functions
     pl_vector = pl_num;
@@ -81,7 +81,7 @@ if ~exist('plotOtherGraphs','var') % if statement for this file to be used in ot
     end
 
     %assumptions box
-    assumptions = sprintf('cdo (start): %.4f, cdo (end): %.4f, e: %.2f, alt: %.0f ft, S: %.0f m^2, AR: %.0f, Cruise: %.0f kts , Loiter: at min drag', cd0,cdo,e,cruise_alt*3.281,S,AR,convvel(v_cruise,'m/s','kts'));
+    assumptions = sprintf('cdo: %.4f, e: %.2f, alt: %.0f ft, S: %.0f m^2, AR: %.0f, Loiter: at min drag', cd0,e,cruise_alt*3.281,S,AR);
     annotation('textbox',...
         [0.43 0.86 0.31 0.05],...
         'String',assumptions,...

@@ -2,7 +2,7 @@
 % 460368355
 
 if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
-    clear
+clear
     
     % general parameters
     %albatross_parameters_maritime;
@@ -53,12 +53,12 @@ z = 2/pi * (ct + cr); % N
 % equations of lift distributions
 xDelta = 0.1e-3;
 x = 0:xDelta:b/2;
-c = cr - 2/b*(cr-ct)*x; % trapezoid. And local chord
+yt = cr - 2/b*(cr-ct)*x; % trapezoid. And local chord
 ye = z*sqrt(1 - (2*x/b).^2); % ellipse
-ym = (c + ye)/2; % mean
-
-figure(1)
-plot(x,c, x,ye, x,ym)
+c = (yt + ye)/2; % mean
+c(end) = 0;
+% figure(1)
+plot(x,yt, x,ye, x,c)
 legend('trapezoid','ellipse','mean')
 ylabel('lift distribution shape')
 xlabel('span location (m)')
@@ -86,8 +86,8 @@ nasa1015bottom = [0.000000 ...
              -0.004646 -0.002130 -0.000215  0.001069  0.001761  0.001957  0.001792  0.001378  0.000884 ...
              0.000429 0.000113 0.000000];
 
-figure(2)
-plot(nasa1015x,nasa1015top,'b', nasa1015x,nasa1015bottom,'b')
+% figure(2)
+% plot(nasa1015x,nasa1015top,'b', nasa1015x,nasa1015bottom,'b')
     
 
 % volume required
@@ -98,14 +98,20 @@ rho_fuel = 804; % kg/m^3
 % sums area inside aerofoil, then scales x and y by multiplying by local
 % chord c, and gets volume of element with xDelta  
 wingArea = sum((nasa1015top(1:end-1)-nasa1015bottom(1:end-1)).*diff(nasa1015x));
-volumeWing = sum(wingArea * c.^2*xDelta) * 0.7*0.4; % 70% of wing available for fuel usage, 40% length of wing used (no fuel in folding part)
-wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta;
+%volumeWing = sum(wingArea * c.^2*xDelta) * 0.7*0.4; % 70% of wing available for fuel usage, 40% length of wing used (no fuel in folding part)
+%wingFuelWeight = volumeWing*rho_fuel; %
+
+fuelStopIndex = round(length(x)*0.4); % 40% of length used for fuel (array index for last part of wing length used for fuel)
+wingFuelFactor = 0.7 * [ones(1,fuelStopIndex), zeros(1,length(x)-fuelStopIndex)]; % 70% of fuel useable in wing area (
+wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta .* wingFuelFactor; % multiply by useable space in fuel
+volumeWing = sum(wingFuelWeight)/rho_fuel;
+
 fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
 
 V_required = f_used/rho_fuel;
 fprintf('Volume required: %.3f m^3\n', V_required);
 internalFuel = V_required - 2*volumeWing;
-internalFuelWeight = internalFuel*rho_fuel - 2000; % some reason at mission end theres 2100kg fuel remaining %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+internalFuelWeight = internalFuel*rho_fuel; 
 fprintf('Fuel Amount left (wings 70%% full): %.3f m^3\n', internalFuel);
 
 %% Material list
@@ -127,13 +133,16 @@ Materials.AL2024.tensileYield = 324e6; % Pa
 
 %% force, moment calculation
 
-L = 0.5*rho0*V^2*clmax * ym; % max load - sea level and max CL 
-L_orig = L;
 n = 1; % g loading - highest net force at n <= 1
+L = n * 0.5*rho0*V^2*clmax * c; % max load - sea level and max CL %%%%%%%%%%%%% dont involve weight in ligt calculation. I think it should
+L_orig = L;
 totalLift = 0.5 * sum(c.*L) * xDelta; % assume triangular shaped distribution along chord (largest load at leading edge)
 fprintf('center Lift: %.0f N\n', L(1));
-fprintf('total Lift: %.0f N\n', totalLift);
-        
+fprintf('total Lift: %.0f N\n\n', totalLift);
+      
+q = n*TOW/S * c; % way too low %%%%%%%% need to fix up
+
+
 h = 0.15*c; % m - height of beam at each section
 b_cap0 = 0.15; % m - constant beam width (value for plot)
 t_cap0 = 0.07; % m 
@@ -142,27 +151,35 @@ b_cap_vec = b_cap0; %0.05:0.01:0.3; % m
 t_cap_vec = t_cap0; %0.01:0.02:0.1; % m
 
 % assign material values
-beamUsed = 'AL7075';
-E = Materials.(beamUsed).E;
-rhoBeam = Materials.(beamUsed).rho; % (kg/m^3)
-shearStrength = Materials.(beamUsed).shearStrength; % Pa
-shearModulus = Materials.(beamUsed).shearModulus; % Pa
-ultimateTensile = Materials.(beamUsed).ultimateTensile; % Pa
-tensileYield = Materials.(beamUsed).tensileYield; % Pa
+% beamUsed = 'AL7075';
 
-for m = 1:length(t_cap_vec)
+materials = fieldnames(Materials);
+for k = 1:length(materials)
+        
+    beamUsed = materials{k};
+    E = Materials.(beamUsed).E;
+    rhoBeam = Materials.(beamUsed).rho; % (kg/m^3)
+    shearStrength = Materials.(beamUsed).shearStrength; % Pa
+    shearModulus = Materials.(beamUsed).shearModulus; % Pa
+    ultimateTensile = Materials.(beamUsed).ultimateTensile; % Pa
+    tensileYield = Materials.(beamUsed).tensileYield; % Pa
+    
+    m = 1;
+    n = 1;
+    
+% for m = 1:length(t_cap_vec)
     t_cap = t_cap_vec(m);
-    for n = 1:length(b_cap_vec)
-        b_cap = b_cap_vec(n);
+%     for n = 1:length(b_cap_vec)
+    b_cap = b_cap_vec(n);
         
         beamWeight = rhoBeam*t_cap*(2*b_cap+h-2*t_cap)*xDelta;
         wingWeight = (wingFuelWeight + beamWeight)*g;
         L = L - wingWeight;
-%         figure(3)
-%         plot(x,L_orig, x,wingWeight, x,L)
-%         ylabel('Force (N)')
-%         xlabel('span location (m)')
-%         legend('Lift','Fuel Weight','Net Vertical')
+        figure(3)
+        plot(x,L_orig, x,wingWeight, x,L, x,q)
+        ylabel('Force (N)')
+        xlabel('span location (m)')
+        legend('Lift','Fuel Weight','Net Vertical','Equation')
 
 
         % bending
@@ -191,67 +208,76 @@ for m = 1:length(t_cap_vec)
         if t_cap == t_cap0 && b_cap == b_cap0
             figure(4)
             subplot(2,2,1)
-            plot(x,Sh)
+            plot(x,Sh)%, 'DisplayName', beamUsed)
             ylabel('Shear (N)')
             xlabel('span location (m)')
             title(['b_{cap} = ',num2str(b_cap), ' m, t_{cap} = ',num2str(t_cap),' m'])
             ax = gca;
             ax.TitleFontSizeMultiplier = 0.8;
             xlim([0 b/2])
-
+            hold on
+            
             subplot(2,2,2)
             plot(x,M)
             ylabel('Bending Moment (Nm)')
             xlabel('span location (m)')
             xlim([0 b/2])
-
+            hold on
+            
             subplot(2,2,3)
             plot(x,rad2deg(theta))
             ylabel('Angular Deflection (ded)')
             xlabel('span location (m)')
             xlim([0 b/2])
-
+            hold on
+            
             subplot(2,2,4)
             plot(x,w)
             ylabel('Deflection (m)')
             xlabel('span location (m)')
             xlim([0 b/2])
+            legend_labels{k} = beamUsed;
+            hold on
         end
         
         maxS(m,n) = min(Sh);
         maxM(m,n) = max(M);
         maxW(m,n) = max(w);
-    end
+        
+        fprintf('%s weight: %.0f kg\n', beamUsed,sum(beamWeight));
+    %end
 end
 
+%legend('show');
+legend(legend_labels,'location','NW')
 
-figure(5)
-subplot(2,2,1)
-for j = 1:size(maxS,1)
-    plot(b_cap_vec*1000,maxS(j,:),'linewidth',3)
-    legend_labels{j} = sprintf('t_{cap} = %.2f m.', t_cap_vec(j));
-    hold on;
-end
-legend(legend_labels)
-xlabel('b cap width (mm)');
-ylabel('min shear (N/m^2)');
-
-subplot(2,2,2)
-for j = 1:size(maxM,1)
-    plot(b_cap_vec*1000,maxM(j,:),'linewidth',3)
-    legend_labels{j} = sprintf('t_{cap} = %.2f m.', t_cap_vec(j));
-    hold on;
-end
-legend(legend_labels)
-xlabel('b cap width (mm)');
-ylabel('max moment (Nm)');
-
-subplot(2,2,3)
-for j = 1:size(maxW,1)
-    plot(b_cap_vec*1000,maxW(j,:),'linewidth',3)
-    legend_labels{j} = sprintf('t_{cap} = %.2f m.', t_cap_vec(j));
-    hold on;
-end
-legend(legend_labels)
-xlabel('b cap width (mm)');
-ylabel('max deflection (m)');
+% figure(5)
+% subplot(2,2,1)
+% for j = 1:size(maxS,1)
+%     plot(b_cap_vec*1000,maxS(j,:),'linewidth',3)
+%     legend_labels{j} = sprintf('t_{cap} = %.2f m.', t_cap_vec(j));
+%     hold on;
+% end
+% legend(legend_labels)
+% xlabel('b cap width (mm)');
+% ylabel('min shear (N/m^2)');
+% 
+% subplot(2,2,2)
+% for j = 1:size(maxM,1)
+%     plot(b_cap_vec*1000,maxM(j,:),'linewidth',3)
+%     legend_labels{j} = sprintf('t_{cap} = %.2f m.', t_cap_vec(j));
+%     hold on;
+% end
+% legend(legend_labels)
+% xlabel('b cap width (mm)');
+% ylabel('max moment (Nm)');
+% 
+% subplot(2,2,3)
+% for j = 1:size(maxW,1)
+%     plot(b_cap_vec*1000,maxW(j,:),'linewidth',3)
+%     legend_labels{j} = sprintf('t_{cap} = %.2f m.', t_cap_vec(j));
+%     hold on;
+% end
+% legend(legend_labels)
+% xlabel('b cap width (mm)');
+% ylabel('max deflection (m)');

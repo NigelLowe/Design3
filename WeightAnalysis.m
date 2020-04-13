@@ -16,9 +16,7 @@ en_vec = [34 24  51 40];  % single endurance value for run
 % maritime field 2, airfield last 2
 
 insideFuel = [];
-params = [];
-% t_vec = [];
-% cg_percent_vec = [];
+finalParams = [];
 
 row = 0;
 missionType = {'Maritime','Airfield'};
@@ -61,7 +59,7 @@ for mission = missionType
 
         % convert variables to imperial for equations
         S_ft = S*10.7639; % ft^2
-
+        wingFuelWeight = 2*wingFuelWeight; % to account for both wings
 
         L = 16; % m - fuselage length
         H = 2.5; % m - fueslage height
@@ -101,7 +99,6 @@ for mission = missionType
         Mland = MTOW/1.5; % lb - max landing weight
         Ln = 1.2*39.3701; % in - nose landing gear
         Lm = 1.45*39.3701; % in - main landing gear weight 
-        %fuselageWeight1 = 10.43*Kinl^1.42*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.71; % USAF/Commercial - Nicolai
         fuselageWeight = 11.03*Kinl^1.23*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.61; % USN - Nicolai
         wingWeight = 1.75 * 0.00428*S_ft^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai % multiply by 1.75 since the C-2 Grumman has a similar wingspan and folding wings with outer weight 3000lb.
         % https://www.tested.com/tech/568755-airplane-origami-how-folding-wings-work/     ^
@@ -128,20 +125,18 @@ for mission = missionType
         P2 = 10.49707; % lb/in^2 - max static pressure at engine compressor face
         Kgeo = 1; % duct shape factor (1 for round duct)
         Km = 1; % duct material factor (1 for M < 1)
-        %Lr = 0.6; % ft - ramp length forward of throat per inlet
         engineWeight = 4189; % lb - TP-400
         ne = 1; % number of engines
         np = 1; % number of propellers
         nb = 4; % number of blades per propeller
         dp = 3*3.28084; % ft - propeller diameter
         hp = 11000; % shaft horsepower
-        %Kte = 1; % temperature correction factor (1 for Max nach number < 1)
         duct = 0.32*Ni*Ld*Ai^0.65*P2*0.6; % duct support structure (internal only)
         internalDuct = 1.735*(Ni*Ld*Ai*0.5*P2*Kgeo*Km)^0.7331; % duct structure from inlet lip to engine compressor face (internal engine installations only)
         totalDuct = duct + internalDuct;
         wingFuel = sum(wingFuelWeight);
         totalFuelWeight = wingFuel+internalFuelWeight;
-        maxFuelWeight = 18341; % max fuel - so the below vaues are the same for all cases
+        maxFuelWeight = 18341; % max fuel - so the below vaues are the same for all cases %%%%%%%%%%%% should change to just internal fuel weight fror self sealing
         totalFuelGallons = maxFuelWeight/rho_fuel*1000*0.214172; % Imperial gallon (should be US (0.26) but dont want a bigger value)
         bladderCells = 23.1*(totalFuelGallons*10^-2)^0.758; % non-self sealing bladder cells
         cellSupports = 7.91*(totalFuelGallons*10^-2)^0.854; % fuel system bladder cell backing and supports
@@ -255,9 +250,8 @@ for mission = missionType
 
         end
         
-        insideFuel = [insideFuel; fuelStart(1).weight fuelStart(2).weight fuel(1).weight internalFuelWeight wingFuel totalFuelWeight totalFuelWeight/rho_fuel]; % inside fuel (kg),total wing fuel (kg), total fuel (kg), total fuel (m^3)
-        
-        params = [params; cg_empty0, cg_empty/L*100, cg(1)/L*100, totalWeight(1)]; % oew_cg (%), zfw_cg (%), start_cg, TOW, 
+        insideFuel = [insideFuel; wingFuel internalFuelWeight totalFuelWeight totalFuelWeight/rho_fuel]; % total wing fuel (kg), inside fuel (kg), total fuel (kg), total fuel (m^3)
+        finalParams = [finalParams; cg_empty0, cg_empty/L*100, cg(1)/L*100, totalWeight(1)]; % oew_cg (%), zfw_cg (%), start_cg, TOW, 
         
         t_vec{row,col} = (0:length(fused))*time_res;
         cg_percent_vec{row,col} = cg/L*100; %(cg - x_ac)/c_bar; %
@@ -271,22 +265,14 @@ arraySize = size(cg_percent_vec,1);
 xLimits = [43.5 47];
 yLimits1 = [0 55];
 yLimits2 = [5000 25000];
+
 figure(1)
 subplot(1,2,1)
-% yyaxis left
 for j = 1:arraySize
-%     yyaxis left
     plot(cg_percent_vec{1,j},t_vec{1,j},'linewidth',3)
     legend_labels{j} = sprintf('%.0f kg.', pl_vec(j));
-    
-%     yyaxis right
-%     cg_percent_length = (cg_percent_vec{1,j}*c_bar + x_ac)/L; 
-%     set(gca,'YTick',cg_percent_length, 'YLim', [min(cg_percent_length), max(cg_percent_length)]) % #important
-%     ylabel('cg location (% aft of nose)');
-    
     hold on
 end
-% yyaxis left
 legend(legend_labels,'location','NE')
 ylabel('endurance (hr)')
 xlabel('cg location (% aircraft length)')
@@ -296,7 +282,7 @@ title(missionType{1})
 
 
 subplot(1,2,2)
-for j = 1:arraySize %arraySize/2+1:arraySize
+for j = 1:arraySize
     plot(cg_percent_vec{2,j},t_vec{2,j},'linewidth',3)
     hold on
 end
