@@ -5,8 +5,8 @@ if ~exist('plotOtherGraphs','var') % if statement for this file use in other fun
 clear
     
     % general parameters
-    %albatross_parameters_maritime;
-    albatross_parameters_airfield;
+    albatross_parameters_maritime;
+    %albatross_parameters_airfield;
 end
 clc
 close all
@@ -21,7 +21,7 @@ set(groot,'defaultLineLineWidth',2.0,...
 %% general parameters
 if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
     pl_num = 3500;
-    en_num = 30;
+    en_num = 24;
 end
 plotOtherGraphs = 'no';
 prelim_report_code;
@@ -138,10 +138,11 @@ L = n * 0.5*rho0*V^2*clmax * c; % max load - sea level and max CL %%%%%%%%%%%%% 
 L_orig = L;
 totalLift = 0.5 * sum(c.*L) * xDelta; % assume triangular shaped distribution along chord (largest load at leading edge)
 fprintf('center Lift: %.0f N\n', L(1));
-fprintf('total Lift: %.0f N\n\n', totalLift);
+fprintf('total Lift: %.0f N\n', totalLift);
       
-q = n*TOW/S * c; % way too low %%%%%%%% need to fix up
-
+q = n*TOW*g/S * c; % way too low %%%%%%%% need to fix up
+totalQ = 0.5 * sum(c.*q) * xDelta;
+fprintf('total Lift Equation: %.0f N\n\n', totalQ);
 
 h = 0.15*c; % m - height of beam at each section
 b_cap0 = 0.15; % m - constant beam width (value for plot)
@@ -154,9 +155,9 @@ t_cap_vec = t_cap0; %0.01:0.02:0.1; % m
 % beamUsed = 'AL7075';
 
 materials = fieldnames(Materials);
-for k = 1:length(materials)
+for mIndex = 1:length(materials)
         
-    beamUsed = materials{k};
+    beamUsed = materials{mIndex};
     E = Materials.(beamUsed).E;
     rhoBeam = Materials.(beamUsed).rho; % (kg/m^3)
     shearStrength = Materials.(beamUsed).shearStrength; % Pa
@@ -236,7 +237,7 @@ for k = 1:length(materials)
             ylabel('Deflection (m)')
             xlabel('span location (m)')
             xlim([0 b/2])
-            legend_labels{k} = beamUsed;
+            legend_labels{mIndex} = beamUsed;
             hold on
         end
         

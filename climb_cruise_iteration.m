@@ -102,11 +102,8 @@ while abs(TOW_new - TOW)/TOW > 1e-5
             Thrust = cd*(0.5*rho*S*v^2);
 
             Power = Thrust*v/prop_n;
-            
-            alt = alt;
-            
+                        
         end
-        
         
         %Fuel
 

@@ -43,7 +43,7 @@ for mission = missionType
 
         close all;
         clc;
-        clearvars -except params row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
@@ -251,7 +251,7 @@ for mission = missionType
         end
         
         insideFuel = [insideFuel; wingFuel internalFuelWeight totalFuelWeight totalFuelWeight/rho_fuel]; % total wing fuel (kg), inside fuel (kg), total fuel (kg), total fuel (m^3)
-        finalParams = [finalParams; cg_empty0, cg_empty/L*100, cg(1)/L*100, totalWeight(1)]; % oew_cg (%), zfw_cg (%), start_cg, TOW, 
+        finalParams = [finalParams; cg_empty0, cg_empty/L*100, cg(1)/L*100, totalWeight0, totalWeight(1)]; % oew_cg (%), zfw_cg (%), empty weight, start_cg, TOW, 
         
         t_vec{row,col} = (0:length(fused))*time_res;
         cg_percent_vec{row,col} = cg/L*100; %(cg - x_ac)/c_bar; %
