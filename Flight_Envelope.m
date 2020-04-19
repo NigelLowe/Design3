@@ -1,77 +1,85 @@
 % Flight envelope
 % 460389730
 
+% certify under STANAG Subpart C 321-
+
 % clear command window and workspace
 clc;
 clear;
 clf;
 
+% set default figure parameters
+        set(groot,'defaultLineLineWidth',2.0,...
+            'DefaultAxesFontSize', 20, ...
+            'defaultLineMarkerSize',30,...
+            'defaultAxesXGrid','on',...
+            'defaultAxesYGrid','on')
+        
 albatross_parameters_maritime;
-%albatross_parameters_airfield;
+albatross_parameters_airfield;
 
 % Input aerodynamic parameters.
-% MTOW = 1435;            % lbs
-% S = 191.5;              % ft^2 wing area
-% b = 57.4;               % wing span in feet    
-% rho = 0.0023769;        % slugs/ft^3 density factor at service ceiling*density atsea level
-% V_stalldown = 38;       %  knots
-% V_stallup = 35;         %  knots
-% W_L = MTOW/S;           % lb/ft^2 wing loading
-% C = S/b;                % mean chord, feet
-% AR = b^2/S;             % wing aspect ratio
-% g = 32.2;               % gravity in imperial ft/s^2
-% U_1 = 50;               % 50 ft/s gust cruise
-% U_2 = 25;               % 25 ft/s gust dive
+g = 9.81;                 % gravity in SI
+MTOW = 23000*g;           % N --------------------------------------------- from design min to design max weight 
+rho0 = 1.225;             % kg/m3 - SL density 
+W_L = MTOW/S;             % kg/m^2 wing loading
 
-MTOW = 23000*2.20462;     % lbs
-S = S*3.28084^2;          % ft^2 wing area
-b = b*3.28084;            % wing span in feet    
-rho = rho0*0.00194032;    % slugs/ft^3 density factor at service ceiling*density atsea level
-V_stalldown = 55*1.94384; % knots
-V_stallup = 52*1.94384;   % knots
-W_L = MTOW/S;             % lb/ft^2 wing loading
-C = c*3.28084;            % mean chord, feet
-g = 32.2;                 % gravity in imperial ft/s^2
-U_1 = 50;                 % 50 ft/s gust cruise
-U_2 = 25;                 % 25 ft/s gust dive
+alt = 000; % ft
+if alt < 20000
+    rho = rho0;
+    U_1 = 15.2;               % m/s - 50 ft/s gust cruise
+    U_2 = 7.6;                % m/s - 25 ft/s gust dive
+else
+    U_1 = 15.2 - 19/75000 * (alt - 20000);
+    U_2 = 7.6 - 19/150000 * (alt - 20000);
+    rho = rho0*3.468/14.696; % 35000ft factor    -------------------------- needs to be done at range of operating altitude
+end
 
 %% Calculations
 
 % Max lift at stall
-CLmax_Down = MTOW/(0.5*rho*S*(V_stalldown^2));
-CLmax_Up = MTOW/(0.5*rho*S*(V_stallup^2));
+CLmax_Up = 2; %MTOW/(0.5*rho*S*(V_stallup^2));
+CLmax_Down = 1.5; %MTOW/(0.5*rho*S*(V_stalldown^2));
+V_stallup = sqrt(MTOW/(0.5*rho*CLmax_Up*S)); %52;   % m/s
+V_stalldown = sqrt(MTOW/(0.5*rho*CLmax_Down*S)); %55; % m/s
 
 % Designed cruise speed.
-% V_C = 92;
-V_C = 200; % knots
+V_C = 200*0.514444; % knots
 
 % Limiting dive speed
-% V_D = 135;
-V_D = 320; % knots
+V_D = 320*0.514444; % knots
 
+% max loading factor
+nmax_positive = min(3.8, 2.1 + (10900/(MTOW/g + 4536)));
+nmax_negative = -0.4 * nmax_positive;
 
 % Lift curve slope
 a = (2*pi)/(1+2/AR);
-ug = (2*W_L)/(rho*C*g*a);
-K = (0.88 * ug)/(5.3 +ug);
-
-% max loading factor
-nmax_positive = max(4.2, 2.1 + (24000/(MTOW + 10000)));
-nmax_negative = -1*0.4 * nmax_positive;
+ug = (2*W_L)/(rho*c*g*a);
+K = (0.88 * ug)/(5.3 + ug);
 
 % maximum load factor due to cruise gust or dive gust
-gust_cruise_pos = 1+((K*U_1*V_C*a)/(498*W_L));
-gust_cruise_neg = 1-((K*U_1*V_C*a)/(498*W_L));
-gust_dive_pos = 1+((K*U_2*V_D*a)/(498*W_L));
-gust_dive_neg = 1-((K*U_2*V_D*a)/(498*W_L));
+gust_cruise_pos = 1+((K*rho0*U_1*V_C*a)/(2*W_L));
+gust_cruise_neg = 1-((K*rho0*U_1*V_C*a)/(2*W_L));
+gust_dive_pos   = 1+((K*rho0*U_2*V_D*a)/(2*W_L));
+gust_dive_neg   = 1-((K*rho0*U_2*V_D*a)/(2*W_L));
 
 % Max and Min Manouverability speeds.
 Va_Up = sqrt((nmax_positive*MTOW)/(0.5*rho*CLmax_Up*S)); 
 Va_Down = sqrt((-1*nmax_negative*MTOW)/(0.5*rho*CLmax_Down*S)); 
 
 %% Array for the cruise manourevility
-n_p= 0:0.001:nmax_positive;
+n_p = 0:0.001:nmax_positive;
 Va_p = sqrt((n_p(:)*MTOW)./(0.5*rho*CLmax_Up*S));
+
+% Convert velocities to knots for plotting
+Va_p = Va_p*1.94384;
+Va_Up = Va_Up*1.94384;
+Va_Down = Va_Down*1.94384;
+V_C = V_C*1.94384;
+V_D = V_D*1.94384;
+V_stallup = V_stallup*1.94384;
+V_stalldown = V_stalldown*1.94384;
 
 % plot arrays
 figure(1);
@@ -80,14 +88,14 @@ plot(Va_p,n_p,'b');
 title('Flight Envelope');
 xlabel('Airspeed (knots)');
 ylabel('Load Factor n');
-
-text(10,4,'Gust Limits','Color','red','FontSize',10)
-text(10,3.5,'Manoeuvre Limits','Color','blue','FontSize',10)
+text(10,3,'Gust Limits','Color','red','FontSize',10)
+text(10,2.5,'Manoeuvre Limits','Color','blue','FontSize',10)
 
 
 %% Array for the dive manourevility
 n_n = 0:-0.001:nmax_negative;
 Va_n = sqrt(abs((n_n(:)*MTOW)./(0.5*rho*CLmax_Down*S)));
+Va_n = Va_n*1.94384; % convert to knots
 plot(Va_n,n_n,'b');
 
 %% Top line from A to D
@@ -171,5 +179,5 @@ x = [0 V_D];
 y = [1 1];
 plot(x,y,'k');
 
-axis([0 V_D*1.1 -3.0482 5.0482]);
+%axis([0 V_D*1.1 -3.0482 5.0482]);
 box on

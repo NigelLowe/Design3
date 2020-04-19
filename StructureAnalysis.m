@@ -5,8 +5,8 @@ if ~exist('plotOtherGraphs','var') % if statement for this file use in other fun
 clear
     
     % general parameters
-    albatross_parameters_maritime;
-    %albatross_parameters_airfield;
+    %albatross_parameters_maritime;
+    albatross_parameters_airfield;
 end
 clc
 close all
@@ -20,16 +20,13 @@ set(groot,'defaultLineLineWidth',2.0,...
 
 %% general parameters
 if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
-    pl_num = 3500;
-    en_num = 24;
+    pl_num = 500;
+    en_num = 51;
 end
 plotOtherGraphs = 'no';
 prelim_report_code;
 clc
 close all
-
-% flight condition
-V = 80; % m/s
 
 % for taper ratio input
 taper_r = 0.45; % from graph in lecture 5 slide 19. Minimum drag at 0 sweep
@@ -67,6 +64,92 @@ xlim([0 b/2])
 %% volume in wing - NASA1015
 
 % start at (0,0)
+FX_74_Cl5_140 = [1.000000  0.000090
+  0.997540  0.001890
+  0.990700  0.006240
+  0.980370  0.011500
+  0.966980  0.017410
+  0.950440  0.024020
+  0.930640  0.031880
+  0.907750  0.040010
+  0.882020  0.048480
+  0.853700  0.057180
+  0.823090  0.066160
+  0.790480  0.075490
+  0.756160  0.085100
+  0.720430  0.094820
+  0.683590  0.104460
+  0.645940  0.113850
+  0.607780  0.122870
+  0.569370  0.131370
+  0.530990  0.139160
+  0.492650  0.146040
+  0.454350  0.151770
+  0.416380  0.156060
+  0.378870  0.158680
+  0.342040  0.159440
+  0.306090  0.158200
+  0.271200  0.154930
+  0.237600  0.149640
+  0.205490  0.142430
+  0.175040  0.133440
+  0.146480  0.122920
+  0.119990  0.111100
+  0.095760  0.098260
+  0.073950  0.084590
+  0.054680  0.070300
+  0.038110  0.055760
+  0.024330  0.041450
+  0.013380  0.027690
+  0.005480  0.015180
+  0.000980  0.005180
+  0.000000 -0.000210
+  0.000980 -0.004350
+  0.005480 -0.007870
+  0.013380 -0.008710
+  0.024330 -0.007540
+  0.038110 -0.005390
+  0.054680 -0.002920
+  0.073950 -0.000220
+  0.095760  0.002700
+  0.119990  0.005840
+  0.146480  0.009210
+  0.175040  0.012790
+  0.205490  0.016510
+  0.237600  0.020300
+  0.271200  0.024100
+  0.306090  0.027860
+  0.342040  0.031520
+  0.378870  0.035030
+  0.416380  0.038320
+  0.454350  0.041340
+  0.492650  0.044000
+  0.530990  0.046240
+  0.569370  0.048010
+  0.607780  0.049250
+  0.645940  0.049920
+  0.683590  0.049970
+  0.720430  0.049360
+  0.756160  0.048070
+  0.790480  0.046080
+  0.823090  0.043340
+  0.853700  0.039780
+  0.882020  0.035370
+  0.907750  0.030130
+  0.930640  0.024340
+  0.950440  0.018510
+  0.966980  0.012900
+  0.980370  0.007560
+  0.990700  0.003190
+  0.997540  0.000680
+  1.000000 -0.000030];
+
+
+zeroIndex = find(FX_74_Cl5_140(:,1) == 0);
+aerofoilX      = FX_74_Cl5_140(zeroIndex:end,1);
+aerofoilTop    = flip(FX_74_Cl5_140(1:zeroIndex,2));
+aerofoilBottom = FX_74_Cl5_140(zeroIndex:end,2);
+
 nasa1015x = [0.000000 ...
              0.001621 0.006475 0.014529 0.025732 0.040010 0.057272 0.077405 0.100279 0.125745 0.153638 ...
              0.183777 0.215968 0.250000 0.285654 0.322698 0.360891 0.399987 0.439732 0.479867 0.520133 ...
@@ -87,7 +170,8 @@ nasa1015bottom = [0.000000 ...
              0.000429 0.000113 0.000000];
 
 % figure(2)
-% plot(nasa1015x,nasa1015top,'b', nasa1015x,nasa1015bottom,'b')
+%plot(nasa1015x,nasa1015top,'b', nasa1015x,nasa1015bottom,'b')
+plot(aerofoilX,aerofoilTop,'b', aerofoilX,aerofoilBottom,'b')
     
 
 % volume required
@@ -97,13 +181,17 @@ rho_fuel = 804; % kg/m^3
          
 % sums area inside aerofoil, then scales x and y by multiplying by local
 % chord c, and gets volume of element with xDelta  
-wingArea = sum((nasa1015top(1:end-1)-nasa1015bottom(1:end-1)).*diff(nasa1015x));
-%volumeWing = sum(wingArea * c.^2*xDelta) * 0.7*0.4; % 70% of wing available for fuel usage, 40% length of wing used (no fuel in folding part)
-%wingFuelWeight = volumeWing*rho_fuel; %
+wingArea = sum((aerofoilTop(1:end-1)-aerofoilBottom(1:end-1)).*diff(aerofoilX));
 
+%fuelStopIndex = round(length(x)*0.4); % 40% of length used for fuel (array index for last part of wing length used for fuel)
+%wingFuelFactor = 0.7 * [ones(1,fuelStopIndex), zeros(1,length(x)-fuelStopIndex)]; % 70% of fuel useable in wing area (
+wingFuelFactorY = zeros(1,length(x));
+wingFuelFactorY(round(length(x)*0.1) : round(length(x)*0.65)) = 1;
+wingFuelFrac = sum(wingFuelFactorY)/length(wingFuelFactorY);
 fuelStopIndex = round(length(x)*0.4); % 40% of length used for fuel (array index for last part of wing length used for fuel)
-wingFuelFactor = 0.7 * [ones(1,fuelStopIndex), zeros(1,length(x)-fuelStopIndex)]; % 70% of fuel useable in wing area (
-wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta .* wingFuelFactor; % multiply by useable space in fuel
+wingFuelFactorX = wingFuelFrac * [ones(1,fuelStopIndex), zeros(1,length(x)-fuelStopIndex)]; % 70% of fuel useable in wing area (
+
+wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta .* wingFuelFactorX; % multiply by useable space in fuel
 volumeWing = sum(wingFuelWeight)/rho_fuel;
 
 fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
@@ -112,7 +200,7 @@ V_required = f_used/rho_fuel;
 fprintf('Volume required: %.3f m^3\n', V_required);
 internalFuel = V_required - 2*volumeWing;
 internalFuelWeight = internalFuel*rho_fuel; 
-fprintf('Fuel Amount left (wings 70%% full): %.3f m^3\n', internalFuel);
+fprintf('Fuel Amount left (wings %.0f%% full): %.3f m^3\n', wingFuelFrac*100, internalFuel);
 
 %% Material list
 % AL 7075-T6 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T6
@@ -133,16 +221,17 @@ Materials.AL2024.tensileYield = 324e6; % Pa
 
 %% force, moment calculation
 
+% flight condition
 n = 1; % g loading - highest net force at n <= 1
-L = n * 0.5*rho0*V^2*clmax * c; % max load - sea level and max CL %%%%%%%%%%%%% dont involve weight in ligt calculation. I think it should
+rho = rho0; 
+V = 1.1*sqrt(TOW*g/(0.5*rho*clmax*S)); %80; % m/s
+
+L = n*TOW*g/S * c; %n * 0.5*rho*V^2*clmax * c; % max load - sea level and max CL - need to see where max load occurs
 L_orig = L;
 totalLift = 0.5 * sum(c.*L) * xDelta; % assume triangular shaped distribution along chord (largest load at leading edge)
 fprintf('center Lift: %.0f N\n', L(1));
 fprintf('total Lift: %.0f N\n', totalLift);
-      
-q = n*TOW*g/S * c; % way too low %%%%%%%% need to fix up
-totalQ = 0.5 * sum(c.*q) * xDelta;
-fprintf('total Lift Equation: %.0f N\n\n', totalQ);
+fprintf('weight (half): %.0f N\n\n', TOW*g/2);
 
 h = 0.15*c; % m - height of beam at each section
 b_cap0 = 0.15; % m - constant beam width (value for plot)
@@ -177,10 +266,10 @@ for mIndex = 1:length(materials)
         wingWeight = (wingFuelWeight + beamWeight)*g;
         L = L - wingWeight;
         figure(3)
-        plot(x,L_orig, x,wingWeight, x,L, x,q)
+        plot(x,L_orig, x,wingWeight, x,L)
         ylabel('Force (N)')
         xlabel('span location (m)')
-        legend('Lift','Fuel Weight','Net Vertical','Equation')
+        legend('Lift','Wing Weight','Net Vertical')
 
 
         % bending

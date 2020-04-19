@@ -50,13 +50,6 @@ for mission = missionType
         disp(mission);
         fprintf('%.0f kg payload | %.0f hr endurance\n', pl_num, en_num);
 
-        % set default figure parameters
-        set(groot,'defaultLineLineWidth',2.0,...
-            'DefaultAxesFontSize', 20, ...
-            'defaultLineMarkerSize',30,...
-            'defaultAxesXGrid','on',...
-            'defaultAxesYGrid','on')
-
         % convert variables to imperial for equations
         S_ft = S*10.7639; % ft^2
         wingFuelWeight = 2*wingFuelWeight; % to account for both wings
@@ -261,6 +254,13 @@ for mission = missionType
 end
 
 %%
+% set default figure parameters
+        set(groot,'defaultLineLineWidth',2.0,...
+            'DefaultAxesFontSize', 20, ...
+            'defaultLineMarkerSize',30,...
+            'defaultAxesXGrid','on',...
+            'defaultAxesYGrid','on')
+        
 arraySize = size(cg_percent_vec,1);
 xLimits = [43.5 47];
 yLimits1 = [0 55];
