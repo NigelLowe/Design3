@@ -55,6 +55,7 @@ x_lim_plot = [24-1 34+1];
 
 % Wing Parameters
 taper_r = 0.45; % taper ratio
+w_sweep = 1; % wing sweep
 cr = 2*b/(AR*(1+taper_r)); % m - chord at tip
 ct = cr * taper_r; % m - chord at root
 mean_ac = 2/3 * cr * (1+taper_r+taper_r^2) / (1+taper_r);
