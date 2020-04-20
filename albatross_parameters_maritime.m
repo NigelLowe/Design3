@@ -40,21 +40,21 @@ cd0c = 0.028; % no external payload drag coefficient
 %Mission Req (for plotting)
 
 % requirement 1 MAX PL
-
 mission_1_x = [24 24];
-
 mission_1_y = [0 18.0e3];
 
 % requirement 2 50 hrs (reduced)
-
 mission_2_x = [34 34];
-
 mission_2_y = [0 18.0e3];
 
 % requirement 3 rotor takeoff
-
 mission_3_x = [10 55];
-
 mission_3_y = [18.5e3 18.5e3];
 
 x_lim_plot = [24-1 34+1];
+
+% Wing Parameters
+taper_r = 0.45; % taper ratio
+cr = 2*b/(AR*(1+taper_r)); % m - chord at tip
+ct = cr * taper_r; % m - chord at root
+mean_ac = 2/3 * cr * (1+taper_r+taper_r^2) / (1+taper_r);

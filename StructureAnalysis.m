@@ -5,7 +5,7 @@ if ~exist('plotOtherGraphs','var') % if statement for this file use in other fun
 clear
     
     % general parameters
-    %albatross_parameters_maritime;
+    albatross_parameters_maritime;
     albatross_parameters_airfield;
 end
 clc
@@ -186,12 +186,14 @@ wingArea = sum((aerofoilTop(1:end-1)-aerofoilBottom(1:end-1)).*diff(aerofoilX));
 %fuelStopIndex = round(length(x)*0.4); % 40% of length used for fuel (array index for last part of wing length used for fuel)
 %wingFuelFactor = 0.7 * [ones(1,fuelStopIndex), zeros(1,length(x)-fuelStopIndex)]; % 70% of fuel useable in wing area (
 wingFuelFactorY = zeros(1,length(x));
-wingFuelFactorY(round(length(x)*0.1) : round(length(x)*0.65)) = 1;
+frontSparLoc = 0.1;
+rearSparLoc = 0.6;
+wingFuelFactorY(round(length(x)*frontSparLoc) : round(length(x)*rearSparLoc)) = 1;
 wingFuelFrac = sum(wingFuelFactorY)/length(wingFuelFactorY);
 fuelStopIndex = round(length(x)*0.4); % 40% of length used for fuel (array index for last part of wing length used for fuel)
 wingFuelFactorX = wingFuelFrac * [ones(1,fuelStopIndex), zeros(1,length(x)-fuelStopIndex)]; % 70% of fuel useable in wing area (
 
-wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta .* wingFuelFactorX; % multiply by useable space in fuel
+wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta .* wingFuelFactorX; % multiply by useable space in fuel % c^2 to scale x and y directions to chord.
 volumeWing = sum(wingFuelWeight)/rho_fuel;
 
 fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
@@ -219,32 +221,47 @@ Materials.AL2024.shearModulus = 28e9; % Pa
 Materials.AL2024.ultimateTensile = 469e6; % Pa
 Materials.AL2024.tensileYield = 324e6; % Pa
 
+% Titanium Ti-6Al-4V (Grade 5), Annealed - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MTP641
+Materials.TI64.E = 113.8e9; % Pa 
+Materials.TI64.rho = 4430; % (kg/m^3)
+Materials.TI64.shearStrength = 550e6; % Pa
+Materials.TI64.shearModulus = 44e9; % Pa
+Materials.TI64.ultimateTensile = 950e6; % Pa
+Materials.TI64.tensileYield = 880e6; % Pa
+
+
 %% force, moment calculation
 
 % flight condition
-n = 1; % g loading - highest net force at n <= 1
-rho = rho0; 
-V = 1.1*sqrt(TOW*g/(0.5*rho*clmax*S)); %80; % m/s
+n = 2.5; % g loading - highest net force at n <= 1 - can actually fly above 1.7 (at 35000ft) due to not enough lift provided
+rho = rho0; %*3.468/14.696; 
+V = sqrt(n*TOW*g/(0.5*rho*clmax*S))*1.94384; % knots
 
-L = n*TOW*g/S * c; %n * 0.5*rho*V^2*clmax * c; % max load - sea level and max CL - need to see where max load occurs
-L_orig = L;
-totalLift = 0.5 * sum(c.*L) * xDelta; % assume triangular shaped distribution along chord (largest load at leading edge)
-fprintf('center Lift: %.0f N\n', L(1));
+q = TOW*g/S * c; % N/m -- load distribution along span
+q = 0.5*c.*q; % to account for triangular chordwise lift distribution
+q_orig = q;
+totalLift = sum(q*xDelta); %0.5 * sum(c.*q) * xDelta; % assume triangular shaped distribution along chord (largest load at leading edge)
+%fprintf('center Lift: %.0f N\n', L(1));
 fprintf('total Lift: %.0f N\n', totalLift);
-fprintf('weight (half): %.0f N\n\n', TOW*g/2);
+fprintf('weight (half): %.0f N\n\n', n*TOW*g/2);
 
 h = 0.15*c; % m - height of beam at each section
-b_cap0 = 0.15; % m - constant beam width (value for plot)
-t_cap0 = 0.07; % m 
+b_cap0 = 150e-3; % m - constant beam width (value for plot)
+t_cap0 = 10e-3; %0.07; % m 
 
 b_cap_vec = b_cap0; %0.05:0.01:0.3; % m
 t_cap_vec = t_cap0; %0.01:0.02:0.1; % m
+
+[~, frontIndex] = min(abs(frontSparLoc - aerofoilX)); % index closest to 10%
+[~, rearIndex] = min(abs(rearSparLoc - aerofoilX)); % index closest to 65%
+h1 = (aerofoilTop(frontIndex)-aerofoilBottom(frontIndex)) * c;
+h2 = (aerofoilTop(rearIndex)-aerofoilBottom(rearIndex)) * c;
 
 % assign material values
 % beamUsed = 'AL7075';
 
 materials = fieldnames(Materials);
-for mIndex = 1:length(materials)
+for mIndex = 1 %:length(materials)
         
     beamUsed = materials{mIndex};
     E = Materials.(beamUsed).E;
@@ -262,84 +279,132 @@ for mIndex = 1:length(materials)
 %     for n = 1:length(b_cap_vec)
     b_cap = b_cap_vec(n);
         
-        beamWeight = rhoBeam*t_cap*(2*b_cap+h-2*t_cap)*xDelta;
-        wingWeight = (wingFuelWeight + beamWeight)*g;
-        L = L - wingWeight;
+        beamWeightEq = @(h) rhoBeam*t_cap*(2*b_cap+h-2*t_cap)*g; % N/m
+        beamWeight = beamWeightEq(h1) + beamWeightEq(h2);
+        wingWeight = (wingFuelWeight + beamWeight);
+        q = q - wingWeight;
         figure(3)
-        plot(x,L_orig, x,wingWeight, x,L)
-        ylabel('Force (N)')
+        plot(x,q_orig, x,wingWeight, x,q)
+        ylabel('Force/span (N/m)')
         xlabel('span location (m)')
         legend('Lift','Wing Weight','Net Vertical')
 
-
-        % bending
         %{
+        bending
         https://ocw.mit.edu/courses/aeronautics-and-astronautics/16-01-unified-engineering-i-ii-iii-iv-fall-2005-spring-2006/systems-labs-06/spl10.pdf
-        %}      
-        Sh = zeros(1,length(x)); % N/m^2? - shear
-        M = zeros(1,length(x)); % Nm - bending moment
-        theta = zeros(1,length(x)); % rad - deflection angle
-        w = zeros(1,length(x)); % m - deflection
         
+        force distribution: front - rear spar (for high aspect ratio wing
+)
+        https://pdfs.semanticscholar.org/e288/128ae125e0a6b8dd949d7e1afa1b97247bb0.pdf
+         
+        %beam stiffness in bending: k = 3EI/L^3
+        https://engineering.sjsu.edu/e10/wp-content/uploads/Structure_Stiffness_S13.pdf
+        %} 
         % moment of inertia
-        I_cap = b_cap*t_cap.^3/12 + b_cap*t_cap*(h/2-t_cap/2).^2; 
-        I_middle = b_cap*(h-2*t_cap).^3/12;
-        I = 2*I_cap + I_middle;
+        I_cap = @(h) b_cap*t_cap.^3/12 + b_cap*t_cap*(h/2-t_cap/2).^2;
+        I_middle = @(h) b_cap*(h-2*t_cap).^3/12;
+        I_combined = @(h) 2*I_cap(h) + I_middle(h);
+        I = I_combined(h);
+        
+        A_beamEq = @(h) 2*b_cap*t_cap + b_cap*(h-2*t_cap);
+        
+        I1 = I_combined(h1);
+        I2 = I_combined(h2);
+        A_beam1 = A_beamEq(h1);
+        A_beam2 = A_beamEq(h2);
+        K1 = 3*E*I1/(b/2)^3; % front spar stiffness
+        K2 = 3*E*I2/(b/2)^3; % rear spar stiffness
+        P1 = q .* K1./(K1+K2);
+        P2 = q .* K2./(K1+K2);
+        P1(end) = 0;  
+        P2(end) = 0;
+        
+        
+        frontShearForcemax = -shearStrength*I1.*h1./(A_beam1.*h1/2);
+        rearShearForcemax = -shearStrength*I2.*h2./(A_beam2.*h2/2);
+
+%         % single spar
+%         Sh1 = zeros(1,length(x)); % N/m^2? - shear
+%         M1 = zeros(1,length(x)); % Nm - bending moment
+%         theta1 = zeros(1,length(x)); % rad - deflection angle
+%         w1 = zeros(1,length(x)); % m - deflection
+% 
+%         for i = length(x)-1:-1:1 % 0 stress and moment at wing tip
+%             Sh1(i) = Sh1(i+1) - 0.5*(0.5*L(i+1)*c(i+1)+0.5*L(i)*c(i))*xDelta;
+%             M1(i) = M1(i+1) - 0.5*(Sh1(i+1)+Sh1(i))*xDelta;
+%         end
+%         for j = 2:length(x) % 0 deflection at wing root
+%             theta1(j) = theta1(j-1) + 0.5*(M1(j)/E/I(j) + M1(j-1)/E/I(j-1))*xDelta;
+%             w1(j) = w1(j-1) + 0.5*(theta1(j)+theta1(j-1))*xDelta;
+%         end
+
+        [Sh1, Sh2]       = deal(zeros(1,length(x))); % N/m^2? - shear
+        [M1, M2]         = deal(zeros(1,length(x))); % Nm - bending moment
+        [theta1, theta2] = deal(zeros(1,length(x))); % rad - deflection angle
+        [w1, w2]         = deal(zeros(1,length(x))); % m - deflection
 
         for i = length(x)-1:-1:1 % 0 stress and moment at wing tip
-            Sh(i) = Sh(i+1) - 0.5*(0.5*L(i+1)*c(i+1)+0.5*L(i)*c(i))*xDelta;
-            M(i) = M(i+1) - 0.5*(Sh(i+1)+Sh(i))*xDelta;
+%             Sh1(i) = Sh1(i+1) -
+%             0.5*(0.5*P1(i+1)*c(i+1)+0.5*P1(i)*c(i))*xDelta; % N or Nm (second being if you take q*c being N but website has it as distribution. Also angle doesnt work if it is Nm here) 
+%             Sh2(i) = Sh2(i+1) - 0.5*(0.5*P2(i+1)*c(i+1)+0.5*P2(i)*c(i))*xDelta; 
+            Sh1(i) = Sh1(i+1) - 0.5*(P1(i+1)+P1(i))*xDelta; % N or Nm
+            Sh2(i) = Sh2(i+1) - 0.5*(P2(i+1)+P2(i))*xDelta; 
+            M1(i) = M1(i+1) - 0.5*(Sh1(i+1)+Sh1(i))*xDelta; % Nm | Nm^2
+            M2(i) = M2(i+1) - 0.5*(Sh2(i+1)+Sh2(i))*xDelta;
         end
         for j = 2:length(x) % 0 deflection at wing root
-            theta(j) = theta(j-1) + 0.5*(M(j)/E/I(j) + M(j-1)/E/I(j-1))*xDelta;
-            w(j) = w(j-1) + 0.5*(theta(j)+theta(j-1))*xDelta;
+            theta1(j) = theta1(j-1) + 0.5*(M1(j)/E/I1(j) + M1(j-1)/E/I1(j-1))*xDelta; % non-dimensional | m
+            theta2(j) = theta2(j-1) + 0.5*(M2(j)/E/I2(j) + M2(j-1)/E/I2(j-1))*xDelta;
+            w1(j) = w1(j-1) + 0.5*(theta1(j)+theta1(j-1))*xDelta; % m or m^2
+            w2(j) = w2(j-1) + 0.5*(theta2(j)+theta2(j-1))*xDelta;
         end
 
         if t_cap == t_cap0 && b_cap == b_cap0
             figure(4)
             subplot(2,2,1)
-            plot(x,Sh)%, 'DisplayName', beamUsed)
-            ylabel('Shear (N)')
+            plot(x,Sh1, x,Sh2) %, x,frontShearForcemax,'--g', x,rearShearForcemax,'--m')%, 'DisplayName', beamUsed)
+            ylabel('Shear (Nm)')
             xlabel('span location (m)')
-            title(['b_{cap} = ',num2str(b_cap), ' m, t_{cap} = ',num2str(t_cap),' m'])
+            title(['b_{cap} = ',num2str(b_cap*1000), ' mm, t_{cap} = ',num2str(t_cap*1000),' mm'])
             ax = gca;
             ax.TitleFontSizeMultiplier = 0.8;
+            legend('front', 'rear')%, 'front limit', 'rear limit')
             xlim([0 b/2])
             hold on
             
             subplot(2,2,2)
-            plot(x,M)
+            plot(x,M1, x,M2)
             ylabel('Bending Moment (Nm)')
             xlabel('span location (m)')
             xlim([0 b/2])
             hold on
             
             subplot(2,2,3)
-            plot(x,rad2deg(theta))
-            ylabel('Angular Deflection (ded)')
+            plot(x,rad2deg(theta1), x,rad2deg(theta2))
+            ylabel('Angular Deflection (deg)')
             xlabel('span location (m)')
             xlim([0 b/2])
             hold on
             
             subplot(2,2,4)
-            plot(x,w)
+            plot(x,w1, x,w2)
             ylabel('Deflection (m)')
             xlabel('span location (m)')
             xlim([0 b/2])
-            legend_labels{mIndex} = beamUsed;
+            %legend_labels{mIndex} = beamUsed;
             hold on
         end
         
-        maxS(m,n) = min(Sh);
-        maxM(m,n) = max(M);
-        maxW(m,n) = max(w);
+        maxS(m,n) = min(Sh1);
+        maxM(m,n) = max(M1);
+        maxW(m,n) = max(w1);
         
-        fprintf('%s weight: %.0f kg\n', beamUsed,sum(beamWeight));
+        fprintf('%s weight: %.0f kg\n', beamUsed,sum(beamWeight)*xDelta);
     %end
 end
 
 %legend('show');
-legend(legend_labels,'location','NW')
+%legend(legend_labels,'location','NW')
 
 % figure(5)
 % subplot(2,2,1)
