@@ -10,7 +10,8 @@ b   = sqrt(S*AR); %m
 c   = S/b;
 
 e   = 0.85;
-cdo = 0.034;
+cdo_dirty = 0.0342;
+cdo_clean = 0.0327
 k   = 1/(pi*e*AR);
 
 %Engine
@@ -18,7 +19,7 @@ prop_n = 0.8;
 
 
 TOW          = 22500;
-empty_weight = 5200;  % Used when BEW is fixed
+empty_weight = 5200;  % Used when BEW is fixed %Confirm if 5900?
 isa_dev = 0; %degrees
 
 %mission parameters
@@ -34,8 +35,6 @@ cl_climb        = sqrt(pi*AR*cdo*e);
 
 clmax = 2;
 clmin = 0.2; 
-cd0 = cdo;    % with payload drag coefficient
-cd0c = 0.021; % no external payload drag coefficient
 
 % For stability analysis
 [Temp,Pressue,rho,Mach,q_bar] = FlowProperties(cruise_alt,v_cruise);
