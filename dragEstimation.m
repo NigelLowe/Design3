@@ -3,11 +3,14 @@
 % Date: 06/04/2020
 
 % Clear the workspace
-clear;
+if ~exist('plotOtherGraphs','var') % if statement for this file to be used in other functions
+    clear
+    
+    % Call parameters
+    albatross_parameters_maritime
+    %albatross_parameters_airfield
+end 
 clc;
-
-% Get the aircraft parameters
-albatross_parameters_maritime;
 
 %% Calculate atmospheric Properties
 

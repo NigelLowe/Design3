@@ -12,7 +12,6 @@ cdo = 0.034;
 k   = 1/(pi*e*AR);
 
 %Engine
-% TSFC = 14*1e-6;   %kg/(s.N)
 prop_n = 0.8;
 
 empty_weight = 6500;  % Used when BEW is fixed
@@ -25,8 +24,6 @@ alt_dev = 0; %ft
 reach_toc       = 4;  %hrs
 cruise_alt      = 35000/3.281; %m
 loiter_point    = 1500e3; %4000 km
-%v_cruise        = convvel(250,'kts','m/s');
-%v_loiter        = convvel(200,'kts','m/s');
 
 target_roc      = cruise_alt/reach_toc/3600; %m/s
 ld_climb        = 1/(2*sqrt(k*cdo)); %min l_d
@@ -54,8 +51,8 @@ mission_3_y = [18.5e3 18.5e3];
 x_lim_plot = [24-1 34+1];
 
 % Wing Parameters
-taper_r = 0.45; % taper ratio
-w_sweep = 1; % wing sweep
+taper_r = 0.45; % taper ratio 
+w_sweep = 0; % wing sweep (deg)
 cr = 2*b/(AR*(1+taper_r)); % m - chord at tip
 ct = cr * taper_r; % m - chord at root
 mean_ac = 2/3 * cr * (1+taper_r+taper_r^2) / (1+taper_r);

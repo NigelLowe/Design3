@@ -43,7 +43,7 @@ for mission = missionType
 
         close all;
         clc;
-        clearvars -except finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
@@ -64,7 +64,7 @@ for mission = missionType
         % masses in lb for calculations
         MTOW = 22500*2.20462; % lb 
         M0 = 120/340; % max flight at sea level
-        n = 4.5; % max load factor
+        n = 2.5; % max load factor
         tc_ratio = 0.15;
         c_bar = 2.31; %mean(c); % mean aerodynamic chord of wing
         Lt = (1-rearWing)*L*3.28084; % ft - tail moment arm 
@@ -89,7 +89,7 @@ for mission = missionType
         Kinl = 1.25; % for inlets in fuselage
         q = 0.5*rho0*V^2*0.02088547; % lb/ft^2 - max dynamic pressure
 
-        Mland = MTOW/1.5; % lb - max landing weight
+        Mland = MTOW; % lb - max landing weight
         Ln = 1.2*39.3701; % in - nose landing gear
         Lm = 1.45*39.3701; % in - main landing gear weight 
         fuselageWeight = 11.03*Kinl^1.23*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.61; % USN - Nicolai
