@@ -25,6 +25,8 @@ isa_dev = 0; %degrees
 reach_toc       = 4;  %hrs
 cruise_alt      = 35000/3.281; %m
 loiter_point    = 4000e3; %4000 km
+v_cruise        = convvel(250,'kts','m/s');
+v_loiter        = convvel(200,'kts','m/s');
 
 target_roc      = cruise_alt/reach_toc/3600; %m/s
 ld_climb        = 1/(2*sqrt(k*cdo)); %min l_d
@@ -34,6 +36,9 @@ clmax = 2;
 clmin = 0.2; 
 cd0 = cdo;    % with payload drag coefficient
 cd0c = 0.021; % no external payload drag coefficient
+
+% For stability analysis
+[Temp,Pressue,rho,Mach,q_bar] = FlowProperties(cruise_alt,v_cruise);
 
 %Mission Req (for plotting)
 
@@ -48,9 +53,7 @@ mission_2_y = [0 22.5e3];
 % requirement 3 rotor takeoff
 mission_3_x = [10 55];
 mission_3_y = [22.5e3 22.5e3];
-
 x_lim_plot = [40-1 51+1];
-
 
 % Wing Parameters
 taper_r = 0.45; % taper ratio
