@@ -18,7 +18,7 @@ prop_n = 0.8;
 
 
 TOW          = 22500;
-empty_weight = 5200;  % Used when BEW is fixed
+empty_weight = 5500;  % Used when BEW is fixed
 isa_dev = 0; %degrees
 
 %mission parameters

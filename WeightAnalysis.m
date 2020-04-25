@@ -12,14 +12,15 @@ clc
 close all   
 
 pl_vec = [500 3500]; % single payload value for run
-en_vec = [34 24  51 40];  % single endurance value for run
+en_vec = [51 40 34 24];  % single endurance value for run
 % maritime field 2, airfield last 2
 
 insideFuel = [];
 finalParams = [];
+componentWeights = [];
 
 row = 0;
-missionType = {'Maritime','Airfield'};
+missionType = {'Airfield','Maritime'};
 for mission = missionType
 % basic parameters
     if strcmp(mission,'Maritime')
@@ -32,7 +33,7 @@ for mission = missionType
     
     for m = 1:length(pl_vec)
         pl_num = pl_vec(m);
-        if strcmp(mission,'Airfield')
+        if strcmp(mission,'Maritime')
             m = m + 2;
         end
         en_num = en_vec(m);
@@ -43,7 +44,7 @@ for mission = missionType
 
         close all;
         clc;
-        clearvars -except ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
@@ -93,7 +94,7 @@ for mission = missionType
         Ln = 1.2*39.3701; % in - nose landing gear
         Lm = 1.45*39.3701; % in - main landing gear weight 
         fuselageWeight = 11.03*Kinl^1.23*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.61; % USN - Nicolai
-        wingWeight = 1.75 * 0.00428*S_ft^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai % multiply by 1.75 since the C-2 Grumman has a similar wingspan and folding wings with outer weight 3000lb.
+        wingWeight = 2 * 0.00428*S_ft^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai % multiply by 1.75 since the C-2 Grumman has a similar wingspan and folding wings with outer weight 3000lb.
         % https://www.tested.com/tech/568755-airplane-origami-how-folding-wings-work/     ^
         vertTailWeight = 0.0034*((MTOW*n)^0.813*Sht^0.584*(bht/trht)^0.033*(c_bar*Lt)^0.28)^0.915; % Nicolai - scale since have V tail
         horiTailWeight = 0.19*((MTOW*n)^0.363*Svt^1.089*M0^0.601*Lt^(-0.726)*(1+Sr/Svt)^0.217*ARvt^0.337*(1+taper_rvt)^0.363*(cosd(sweepvt)^(-0.484)))^1.014; % Nicolai - scale since have v tail
@@ -155,7 +156,7 @@ for mission = missionType
         w_blade = 4*113.3*2.20462;
         %w_blade = Nrotor*0.00008377*shaftWallT*liftOffset*rotorRadius^3/(2*(separationFraction - tipClearance)*t2r^2);
         w_hub = Nrotor*(0.17153*shaftWallT*rotorRadius*Nblade + 0.000010534*(w_blade/Nrotor)*Vtip^2*t2r/rotorRadius);
-        w_shaft = Nrotor*0.081304*shaftWallT*liftOffset*rotorRadius^2*2*separationFraction/t2r;
+        w_shaft = 2 * Nrotor*0.081304*shaftWallT*liftOffset*rotorRadius^2*2*separationFraction/t2r; % factor of 2 for support structure
         
         prop(1)  = weightClass(               'Engine',    engineWeight,  0.19, L);
         prop(2)  = weightClass(     'Propeller Blades',     100*2.20462, 0.015, L); % 374.1795 lb - using equation
@@ -244,7 +245,8 @@ for mission = missionType
         end
         
         insideFuel = [insideFuel; wingFuel internalFuelWeight totalFuelWeight totalFuelWeight/rho_fuel]; % total wing fuel (kg), inside fuel (kg), total fuel (kg), total fuel (m^3)
-        finalParams = [finalParams; cg_empty0, cg_empty/L*100, cg(1)/L*100, totalWeight0, totalWeight(1)]; % oew_cg (%), zfw_cg (%), empty weight, start_cg, TOW, 
+        finalParams = [finalParams; mission, pl_num, cg_empty0, cg_empty/L*100, cg(1)/L*100, totalWeight0, totalWeight(1)]; % oew_cg (%), zfw_cg (%), start_cg, empty weight, TOW, 
+        componentWeights = [componentWeights; mission, pl_num, basicWeight, propWeight, fuelStart.totalWM];
         
         t_vec{row,col} = (0:length(fused))*time_res;
         cg_percent_vec{row,col} = cg/L*100; %(cg - x_ac)/c_bar; %
@@ -254,6 +256,7 @@ for mission = missionType
 end
 
 %%
+
 % set default figure parameters
         set(groot,'defaultLineLineWidth',2.0,...
             'DefaultAxesFontSize', 20, ...
@@ -343,3 +346,11 @@ front2BackLocations = [InOrderNames; num2cell(InOrderLocation); num2cell(InOrder
 disp('       Object name     | location (n.d.) | weight (kg)')
 disp(front2BackLocations');
 
+
+disp('----------------------------Summary----------------------------')
+disp('     Mission   | Payload |    OEW CG   |   ZFW CG   |  Start CG')
+disp(finalParams(:,1:5));
+disp('     Mission   | Payload |    Basic    | Propulsion |    Fuel')
+disp(componentWeights);
+disp('     Mission   | Payload |      OEW       |      TOW')
+disp(finalParams(:,[1,2,6,7]));

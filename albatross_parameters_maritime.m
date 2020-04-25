@@ -16,7 +16,7 @@ k   = 1/(pi*e*AR);
 prop_n = 0.8;
 
 TOW          = 18500;
-empty_weight = 6500;  % Used when BEW is fixed
+empty_weight = 7500;  % Used when BEW is fixed
 
 %initalise deviations
 isa_dev = 0;   %degrees kel

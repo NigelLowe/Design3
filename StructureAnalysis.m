@@ -1,13 +1,13 @@
 % Structural Analysis
 % 460368355
 
-%if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
+if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
 clear
     
     % general parameters
     albatross_parameters_maritime;
     albatross_parameters_airfield;
-%end
+end
 clc
 close all
 
@@ -46,7 +46,7 @@ ct = cr * taper_r; % m - chord at root
 xDelta = 100e-3;
 fuselageWidth = 2;
 x = 0:xDelta:b/2;
-c = cr - 2/b*(cr-ct)*x; % trapezoid. And local chord
+cy = cr - 2/b*(cr-ct)*x; % trapezoid. And local chord
 
    
 %% volume in wing - NASA1015
@@ -248,7 +248,7 @@ wingFuelFrac = sum(wingFuelFactorY)/length(wingFuelFactorY);
 fuelStopIndex = round(length(x)*foldLoc*0.9); % foldLoc% of length used for fuel (assume not all of this volume for fuel (eg. ribs) so take 90%) (array index for last part of wing length used for fuel)
 wingFuelFactorX = wingFuelFrac * [ones(1,fuelStopIndex), zeros(1,length(x)-fuelStopIndex)]; % 70% of fuel useable in wing area (
 
-wingFuelWeight = wingArea*c.^2*rho_fuel*xDelta .* wingFuelFactorX; % multiply by useable space in fuel % c^2 to scale x and y directions to chord.
+wingFuelWeight = wingArea*cy.^2*rho_fuel*xDelta .* wingFuelFactorX; % multiply by useable space in fuel % c^2 to scale x and y directions to chord.
 volumeWing = sum(wingFuelWeight)/rho_fuel;
 
 fprintf('Volume in 1 wing: %.3f m^3\n', volumeWing);
@@ -337,7 +337,7 @@ LPerPanel = Lavg*xDelta; % kg
 M0 = 120/340; % max flight at sea level
 tc_ratio = 0.15;
 wingWeightCalc = 0.453592 * 1.75 * 0.00428*(S*0.3048)^0.48*(AR*M0^0.43*(W*g*4.44822*N)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai
-wWPerSpan = wingWeightCalc/S * c; % (kg/m) - wing weight per span
+wWPerSpan = wingWeightCalc/S * cy; % (kg/m) - wing weight per span
 wWPerSpan(round(foldLoc*length(x))) = wWPerSpan(round(foldLoc*length(x))) + 500; % extra weigth at fold location for everything there
 
 
@@ -354,41 +354,41 @@ end
 payloadY = 0.2; % m - distance from wing to payload
 payloadDrag = Cdo_pod * 0.5 * rho * V^2 * S / g; % kg - Drag on 1 payload
 
-fuelPerSpan = wingArea*c.^2*rho_fuel .* wingFuelFactorX; % kg/m
+fuelPerSpan = wingArea*cy.^2*rho_fuel .* wingFuelFactorX; % kg/m
 selfWeight = N*(wWPerSpan + payloadPerSpan + fuelPerSpan); % kg/m
 
 
 nYDelta = 100;
 for i = 1:length(x)
-    c_mat(:,i) = linspace(0,c(i),nYDelta);
+    c_mat(:,i) = linspace(0,cy(i),nYDelta);
 %     q_mat(:,i) = 2 * Lavg(i)/c(i) * (1 - c_mat(1:end-1,i)/c(i)); % kg/m^2 --- triangular chordwise distribution
     
-    x015 = 0.15*c(i); % chordwise length at 0.15 chord
+    x015 = 0.15*cy(i); % chordwise length at 0.15 chord
     [~, xi015] = min(abs(x015 - c_mat(:,i))); % index closest to 0.15c position
-    cModified = [0.15*c(i)*ones(xi015,1); c_mat(xi015+1:end,i)]; % modidy leading edge values for next equation. Constant value at leading edge to produce flat part
-    q_mat(:,i) = 40/23*Lavg(i)/c(i) * (1 - 1/0.85 * (cModified/c(i) - 0.15)); % triangular chordwise distribution with flat leading edge as per Raymer pg 345
+    cModified = [0.15*cy(i)*ones(xi015,1); c_mat(xi015+1:end,i)]; % modidy leading edge values for next equation. Constant value at leading edge to produce flat part
+    q_mat(:,i) = 40/23*Lavg(i)/cy(i) * (1 - 1/0.85 * (cModified/cy(i) - 0.15)); % triangular chordwise distribution with flat leading edge as per Raymer pg 345
     
 end
 q_mat(:,end) = 0;
 
 %q = 0.5*c.*q; % to account for triangular chordwise lift distribution - combine total force at spanwise position into 1 value to use as N/m even though units would be N
-selfWeightMat = repmat(selfWeight./c,size(q_mat,1),1); % kg/m^2
+selfWeightMat = repmat(selfWeight./cy,size(q_mat,1),1); % kg/m^2
 q = q_mat - selfWeightMat; % kg/m^2
 q_orig = Lavg; % kg/m
 q_mat_orig = q_mat; % kg/m^2
 %totalLift = sum(q_orig*xDelta); % assume triangular shaped distribution along chord (largest load at leading edge)
-totalLift = sum(sum(q_mat.*c/nYDelta)*xDelta);
+totalLift = sum(sum(q_mat.*cy/nYDelta)*xDelta);
 fprintf('total Lift (half): %.0f kg\n', totalLift);
 fprintf('weight (half): %.0f kg\n\n', W/2);
 
-LPerSpanOrig = sum(q_mat.*c/nYDelta);
-LPerSpan  = sum(q.*c/nYDelta);
+LPerSpanOrig = sum(q_mat.*cy/nYDelta);
+LPerSpan  = sum(q.*cy/nYDelta);
 LPerChord = sum(q'*xDelta);
 figure(6)
 plot(LPerChord);
 
 
-h = 0.15*c; % m - height of beam at each section
+h = 0.15*cy; % m - height of beam at each section
 b_cap0 = 111e-3; % m - constant beam width (value for plot)
 t_cap0 = 10e-3; % m 
 
@@ -411,8 +411,8 @@ FS = 1.5; % STANAG Subpart C 303 - "F.O.S no lower than 1.5 for structures whose
 
 [~, frontIndex] = min(abs(frontSparLoc - aerofoilX)); % index closest to front spar location
 [~, rearIndex] = min(abs(rearSparLoc - aerofoilX)); % index closest to rear spar location
-h1 = (aerofoilTop(frontIndex)-aerofoilBottom(frontIndex)) * c;
-h2 = (aerofoilTop(rearIndex)-aerofoilBottom(rearIndex)) * c;
+h1 = (aerofoilTop(frontIndex)-aerofoilBottom(frontIndex)) * cy;
+h2 = (aerofoilTop(rearIndex)-aerofoilBottom(rearIndex)) * cy;
 
 % assign material values
 % beamUsed = 'AL7075';
@@ -475,7 +475,7 @@ for m = 1:length(t_cap_vec)
         
 % spanwise forces/moments
         figure(2)
-        plot(x,sum(q_mat.*c/nYDelta), x,sum(selfWeightMat.*c/nYDelta), x,sum(q_mat.*c/nYDelta)-sum(selfWeightMat.*c/nYDelta), x,sum(P1.*c/nYDelta), x,sum(P2.*c/nYDelta))
+        plot(x,sum(q_mat.*cy/nYDelta), x,sum(selfWeightMat.*cy/nYDelta), x,sum(q_mat.*cy/nYDelta)-sum(selfWeightMat.*cy/nYDelta), x,sum(P1.*cy/nYDelta), x,sum(P2.*cy/nYDelta))
         ylabel('Force/span (kg/m)')
         xlabel('span location (m)')
         legend('Lift','Self Wing Weight','Net Vertical', 'Front','Rear')
@@ -487,8 +487,8 @@ for m = 1:length(t_cap_vec)
 
         [SsF1,SsF2,SsM1,SsM2] = deal(zeros(1,length(x)));
         for i = length(x)-1:-1:1 % 0 stress and moment at wing tip
-            Sf1(i) = Sf1(i+1) - 0.5*(sum(P1(:,i+1))+sum(P1(:,i)))*xDelta*(c(i)/nYDelta); % kg
-            Sf2(i) = Sf2(i+1) - 0.5*(sum(P2(:,i+1))+sum(P2(:,i)))*xDelta*(c(i)/nYDelta); % kg
+            Sf1(i) = Sf1(i+1) - 0.5*(sum(P1(:,i+1))+sum(P1(:,i)))*xDelta*(cy(i)/nYDelta); % kg
+            Sf2(i) = Sf2(i+1) - 0.5*(sum(P2(:,i+1))+sum(P2(:,i)))*xDelta*(cy(i)/nYDelta); % kg
             
             M1(i) = M1(i+1) - 0.5*(Sf1(i+1)+Sf1(i))*xDelta; % kgm
             M2(i) = M2(i+1) - 0.5*(Sf2(i+1)+Sf2(i))*xDelta;
