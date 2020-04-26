@@ -9,11 +9,12 @@
 
 clear
 clc
-close all   
+close all  
 
+% airfield field 2, maritime last 2
 pl_vec = [500 3500]; % single payload value for run
 en_vec = [51 40 34 24];  % single endurance value for run
-% maritime field 2, airfield last 2
+tow_vec = [22.5e3 18.5e3]; % TOW for run
 
 insideFuel = [];
 finalParams = [];
@@ -22,11 +23,13 @@ componentWeights = [];
 row = 0;
 missionType = {'Airfield','Maritime'};
 for mission = missionType
-% basic parameters
+    % basic parameters
     if strcmp(mission,'Maritime')
         albatross_parameters_maritime;
+        tow_num = tow_vec(2);
     elseif strcmp(mission,'Airfield')
         albatross_parameters_airfield;
+        tow_num = tow_vec(1);
     end
     row = row + 1;
     col = 0;
@@ -44,7 +47,7 @@ for mission = missionType
 
         close all;
         clc;
-        clearvars -except componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
@@ -63,7 +66,7 @@ for mission = missionType
 
         %% Basic Weights
         % masses in lb for calculations
-        MTOW = 22500*2.20462; % lb 
+        MTOW = max(tow_vec)*2.20462; % lb 
         M0 = 120/340; % max flight at sea level
         n = 2.5; % max load factor
         tc_ratio = 0.15;
@@ -248,7 +251,8 @@ for mission = missionType
         finalParams = [finalParams; mission, pl_num, cg_empty0, cg_empty/L*100, cg(1)/L*100, totalWeight0, totalWeight(1)]; % oew_cg (%), zfw_cg (%), start_cg, empty weight, TOW, 
         componentWeights = [componentWeights; mission, pl_num, basicWeight, propWeight, fuelStart.totalWM];
         
-        t_vec{row,col} = (0:length(fused))*time_res;
+        %t_vec{row,col} = (0:length(fused))*time_res;
+        t_vec{row,col} = t_run;
         cg_percent_vec{row,col} = cg/L*100; %(cg - x_ac)/c_bar; %
         allWeight{row,col} = totalWeight;
         
@@ -265,8 +269,8 @@ end
             'defaultAxesYGrid','on')
         
 arraySize = size(cg_percent_vec,1);
-xLimits = [43.5 47];
-yLimits1 = [0 55];
+xLimits = [42 47];
+yLimits1 = [0 75];
 yLimits2 = [5000 25000];
 
 figure(1)

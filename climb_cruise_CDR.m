@@ -28,7 +28,9 @@
     d(1)       = 0;
 
     alt(1)     = 0; % set altitude to 0
-
+    
+    clear fused;
+    
     counter_2  = 0; %counter for sake of PL drop
 
     PL_dropped = 0;
@@ -120,14 +122,17 @@
        
         w(i+1) = w(i) - Power(i)*BSFC(i)*time_res*3600; %end of segement fuel
         
+        fused(i) = BSFC(i)*Power(i)*time_res*3600; %kg, as time res is in hrs)
+        
         d(i+1) = d(i) + v(i)*time_res*3600;
 
         t(i+1) = t(i) + time_res; 
         
         i = i+1;
 
-    end
+     end
      
+     t_run = t;
      [ ~, loiter_start_t] = min(abs( d-loiter_point));
      loiter_start_t = t(loiter_start_t);
      

@@ -5,7 +5,7 @@ if ~exist('plotOtherGraphs','var') % if statement for this file use in other fun
 clear
     
     % general parameters
-    albatross_parameters_maritime;
+    %albatross_parameters_maritime;
     albatross_parameters_airfield;
 end
 clc
@@ -20,11 +20,13 @@ set(groot,'defaultLineLineWidth',2.0,...
 
 %% general parameters
 if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
-    pl_num = 500;
-    en_num = 51;
+    pl_num  = 500;
+    en_num  = 51;
+    tow_num = 22.5e3;
 end
 plotOtherGraphs = 'no';
-prelim_report_code;
+%prelim_report_code;
+CDR2_report_code;
 dragEstimation;
 clc
 close all
@@ -243,6 +245,7 @@ wingFuelFactorY = zeros(1,length(x));
 frontSparLoc = 0.1;
 rearSparLoc = 0.65;
 foldLoc = 5.2/(b/2);
+foldIndex = round(foldLoc*length(x));
 wingFuelFactorY(round(length(x)*frontSparLoc) : round(length(x)*rearSparLoc)) = 1;
 wingFuelFrac = sum(wingFuelFactorY)/length(wingFuelFactorY);
 fuelStopIndex = round(length(x)*foldLoc*0.9); % foldLoc% of length used for fuel (assume not all of this volume for fuel (eg. ribs) so take 90%) (array index for last part of wing length used for fuel)
@@ -324,9 +327,9 @@ Materials.TI64.tensileYield = 880e6; % Pa
 
 
 N = 2.5; % load factor
-W = N*22500; % (kg)
+W = N*tow_num; % (kg)
 rho = 1.225; %*3.468/14.696; % factor for 35000ft
-V = sqrt(N*TOW*g/(0.5*rho*clmax*S)); % knots
+V = sqrt(W*g/(0.5*rho*clmax*S)); % knots
 
 Ltrap = 2*W/(b*(1+taper_r))*(1-2*x/b*(1-taper_r));
 Lellip = 4*W/(pi*b)*sqrt(1-(2*x/b).^2);
@@ -336,9 +339,9 @@ LPerPanel = Lavg*xDelta; % kg
 
 M0 = 120/340; % max flight at sea level
 tc_ratio = 0.15;
-wingWeightCalc = 0.453592 * 1.75 * 0.00428*(S*0.3048)^0.48*(AR*M0^0.43*(W*g*4.44822*N)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai
+wingWeightCalc = 0.453592 * 1.75 * 0.00428*(S*0.3048)^0.48*(AR*M0^0.43*(W*g*4.44822)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai
 wWPerSpan = wingWeightCalc/S * cy; % (kg/m) - wing weight per span
-wWPerSpan(round(foldLoc*length(x))) = wWPerSpan(round(foldLoc*length(x))) + 500; % extra weigth at fold location for everything there
+wWPerSpan(foldIndex) = wWPerSpan(foldIndex) + 500; % extra weigth at fold location for everything there
 
 
 payloadLocation = [0.1 foldLoc]; % percent of wing % this number of payload on each wing
@@ -611,3 +614,18 @@ end
 % legend(legend_labels)
 % xlabel('b cap width (mm)');
 % ylabel('max deflection (m)');
+
+%% Lug analysis
+
+q_inner = q_mat(:,1:foldIndex); % N/m^2 - lift on inner wing
+q_outer = q_mat(:,foldIndex:end); % N/m^2 - lift on outer wing
+
+
+% need to find what moment is applied at the lugs that is trying to fold the wings up
+foldSf1 = Sf1(foldIndex);
+foldSf2 = Sf2(foldIndex);
+foldM1 = M1(foldIndex);
+foldM2 = M2(foldIndex);
+foldSs1 = Ss1(foldIndex);
+foldSs2 = Ss2(foldIndex);
+

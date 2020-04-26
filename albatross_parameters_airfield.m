@@ -30,8 +30,8 @@ v_cruise        = convvel(250,'kts','m/s');
 v_loiter        = convvel(200,'kts','m/s');
 
 target_roc      = cruise_alt/reach_toc/3600; %m/s
-ld_climb        = 1/(2*sqrt(k*cdo)); %min l_d
-cl_climb        = sqrt(pi*AR*cdo*e);
+ld_climb        = 1/(2*sqrt(k*cdo_dirty)); %min l_d
+cl_climb        = sqrt(pi*AR*cdo_dirty*e);
 
 clmax = 2;
 clmin = 0.2; 
