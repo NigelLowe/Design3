@@ -260,6 +260,7 @@ for mission = missionType
 end
 
 %%
+neutralPoint = 7.825277/L*100;
 
 % set default figure parameters
         set(groot,'defaultLineLineWidth',2.0,...
@@ -269,7 +270,7 @@ end
             'defaultAxesYGrid','on')
         
 arraySize = size(cg_percent_vec,1);
-xLimits = [42 47];
+xLimits = [42 49];
 yLimits1 = [0 75];
 yLimits2 = [5000 25000];
 
@@ -280,6 +281,7 @@ for j = 1:arraySize
     legend_labels{j} = sprintf('%.0f kg.', pl_vec(j));
     hold on
 end
+plot([neutralPoint neutralPoint], yLimits1,'k--')
 legend(legend_labels,'location','NE')
 ylabel('endurance (hr)')
 xlabel('cg location (% aircraft length)')
@@ -293,6 +295,7 @@ for j = 1:arraySize
     plot(cg_percent_vec{2,j},t_vec{2,j},'linewidth',3)
     hold on
 end
+plot([neutralPoint neutralPoint], yLimits1,'k--')
 legend(legend_labels,'location','NE')
 ylabel('endurance (hr)')
 xlabel('cg location (% aircraft length)')

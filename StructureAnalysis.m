@@ -1,13 +1,13 @@
 % Structural Analysis
 % 460368355
 
-if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
+%if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
 clear
     
     % general parameters
     %albatross_parameters_maritime;
     albatross_parameters_airfield;
-end
+%end
 clc
 close all
 
@@ -263,7 +263,7 @@ internalFuelWeight = internalFuel*rho_fuel;
 fprintf('Fuel Amount left (wings %.0f%% full): %.3f m^3\n', wingFuelFrac*100, internalFuel);
 
 %% Material list
-% AL 7075-T6 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T6
+% 1: AL 7075-T6 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T6
 Materials.AL7075.E = 71.7e9; % Pa 
 Materials.AL7075.rho = 2810; % (kg/m^3)
 Materials.AL7075.shearStrength = 331e6; % Pa
@@ -271,7 +271,7 @@ Materials.AL7075.shearModulus = 26.9e9; % Pa
 Materials.AL7075.ultimateTensile = 572e6; % Pa
 Materials.AL7075.tensileYield = 503e6; % Pa
 
-% AL 7075-T73 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T73
+% 2: AL 7075-T73 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T73
 Materials.AL7075T73.E = 72e9; % Pa 
 Materials.AL7075T73.rho = 2810; % (kg/m^3)
 Materials.AL7075T73.shearStrength = 300e6; % Pa
@@ -279,7 +279,7 @@ Materials.AL7075T73.shearModulus = 26.9e9; % Pa
 Materials.AL7075T73.ultimateTensile = 505e6; % Pa
 Materials.AL7075T73.tensileYield = 435e6; % Pa
 
-% AL 7475-T61 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7475T61
+% 3: AL 7475-T61 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7475T61
 Materials.AL7475.E = 70.3e9; % Pa 
 Materials.AL7475.rho = 2810; % (kg/m^3)
 Materials.AL7475.shearStrength = 330e6; % Pa
@@ -287,7 +287,7 @@ Materials.AL7475.shearModulus = 27e9; % Pa
 Materials.AL7475.ultimateTensile = 565e6; % Pa
 Materials.AL7475.tensileYield = 490e6; % Pa
 
-% AL 7475-T61 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7475T61
+% 4: AL 7475-T61 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7475T61
 Materials.AL7475.E = 70.3e9; % Pa 
 Materials.AL7475.rho = 2810; % (kg/m^3)
 Materials.AL7475.shearStrength = 330e6; % Pa
@@ -295,7 +295,7 @@ Materials.AL7475.shearModulus = 27e9; % Pa
 Materials.AL7475.ultimateTensile = 565e6; % Pa
 Materials.AL7475.tensileYield = 490e6; % Pa
 
-% AL 7475-T7651 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7475T765
+% 5: AL 7475-T7651 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7475T765
 Materials.AL7475T7651.E = 70.3e9; % Pa 
 Materials.AL7475T7651.rho = 2810; % (kg/m^3)
 Materials.AL7475T7651.shearStrength = 330e6; % Pa
@@ -303,7 +303,7 @@ Materials.AL7475T7651.shearModulus = 27e9; % Pa
 Materials.AL7475T7651.ultimateTensile = 565e6; % Pa
 Materials.AL7475T7651.tensileYield = 490e6; % Pa
 
-% AL2024 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T4
+% 6: AL2024 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T4
 Materials.AL2024.E = 73.1e9; % Pa 
 Materials.AL2024.rho = 2780; % (kg/m^3)
 Materials.AL2024.shearStrength = 283e6; % Pa
@@ -311,7 +311,15 @@ Materials.AL2024.shearModulus = 28e9; % Pa
 Materials.AL2024.ultimateTensile = 469e6; % Pa
 Materials.AL2024.tensileYield = 324e6; % Pa
 
-% Titanium Ti-6Al-4V (Grade 5), Annealed - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MTP641
+% 7: Low Ally Steel AMS6350 (MIL5)
+Materials.AMS6350.E = 199.9e9; % Pa 
+Materials.AMS6350.rho = 7833; % (kg/m^3)
+Materials.AMS6350.shearStrength = 372e6; % Pa
+Materials.AMS6350.shearModulus = 75.8e9; % Pa
+Materials.AMS6350.ultimateTensile = 621e6; % Pa
+Materials.AMS6350.tensileYield = 483e6; % Pa
+
+% 8: Titanium Ti-6Al-4V (Grade 5), Annealed - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MTP641
 Materials.TI64.E = 113.8e9; % Pa 
 Materials.TI64.rho = 4430; % (kg/m^3)
 Materials.TI64.shearStrength = 550e6; % Pa
@@ -323,7 +331,7 @@ Materials.TI64.tensileYield = 880e6; % Pa
 %% force, moment calculation
 
 % adjust for other flight conditions with differnt MTOW and load factor
-% Cant do N=2.5 at MTOW but can do N=1But wont be doign 2.5 at MTOW
+% Cant do N=2.5 at MTOW but can do N=1 But wont be doign 2.5 at MTOW
 
 
 N = 2.5; % load factor
@@ -339,7 +347,7 @@ LPerPanel = Lavg*xDelta; % kg
 
 M0 = 120/340; % max flight at sea level
 tc_ratio = 0.15;
-wingWeightCalc = 0.453592 * 1.75 * 0.00428*(S*0.3048)^0.48*(AR*M0^0.43*(W*g*4.44822)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai
+wingWeightCalc = 0.5 * 0.453592 * 1.75 * 0.00428*(S*0.3048)^0.48*(AR*M0^0.43*(W*g*4.44822)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
 wWPerSpan = wingWeightCalc/S * cy; % (kg/m) - wing weight per span
 wWPerSpan(foldIndex) = wWPerSpan(foldIndex) + 500; % extra weigth at fold location for everything there
 
@@ -391,39 +399,45 @@ figure(6)
 plot(LPerChord);
 
 
-h = 0.15*cy; % m - height of beam at each section
-b_cap0 = 111e-3; % m - constant beam width (value for plot)
-t_cap0 = 10e-3; % m 
-
-% % FX_74_Cl5_140
-% b_cap1 = 142e-3; % m
-% t_cap1 = 10e-3; % m
-% b_cap2 = 111e-3; % m
-% t_cap2 = 10e-3; % m
-
-% FX_72_MS_150A
-b_cap1 = 230e-3; % m - front spar
-t_cap1 = 10e-3; % m
-b_cap2 = 180e-3; % m - rear spar % need deflection of both beams to be the same so there is no twisting from normal lift force
-t_cap2 = 10e-3; % m
-
-b_cap_vec = b_cap2; % m
-t_cap_vec = t_cap2; % m
-
-FS = 1.5; % STANAG Subpart C 303 - "F.O.S no lower than 1.5 for structures whose failure would lead to a hazardous or more serious failure condition"
-
 [~, frontIndex] = min(abs(frontSparLoc - aerofoilX)); % index closest to front spar location
 [~, rearIndex] = min(abs(rearSparLoc - aerofoilX)); % index closest to rear spar location
 h1 = (aerofoilTop(frontIndex)-aerofoilBottom(frontIndex)) * cy;
 h2 = (aerofoilTop(rearIndex)-aerofoilBottom(rearIndex)) * cy;
 
-% assign material values
-% beamUsed = 'AL7075';
+h1i = h1(1:foldIndex);
+h1o = h1(foldIndex+1:end);
+h2i = h2(1:foldIndex);
+h2o = h2(foldIndex+1:end);
+
+% FX_72_MS_150A
+b_cap1 = 165e-3; % m - front spar
+t_cap1 = 10e-3; % m
+b_cap2 = 125e-3; % m - rear spar % need deflection of both beams to be the same so there is no twisting from normal lift force
+t_cap2 = 10e-3; % m
+
+% inboard beam properties
+b_cap1i = 165e-3; 
+t_cap1i = 10e-3;
+b_cap2i = 125e-3;
+t_cap2i = 10e-3;
+
+% outboard beam properties - AL7475
+b_cap1o = 100e-3; %275e-3; 
+t_cap1o = 10e-3;
+b_cap2o = 80e-3; %215e-3;
+t_cap2o = 10e-3;
+
+
+b_cap_vec = b_cap2i; % m
+t_cap_vec = t_cap2; % m
+
+FS = 1.5; % STANAG Subpart C 303 - "F.O.S no lower than 1.5 for structures whose failure would lead to a hazardous or more serious failure condition"
 
 disp('Weight of half beam')
 materials = fieldnames(Materials);
 for mIndex = 4%:length(materials)
-        
+    moIndex = 4;
+    
     beamUsed = materials{mIndex};
     E = Materials.(beamUsed).E;
     rhoBeam = Materials.(beamUsed).rho; % (kg/m^3)
@@ -432,18 +446,47 @@ for mIndex = 4%:length(materials)
     ultimateTensile = Materials.(beamUsed).ultimateTensile; % Pa
     tensileYield = Materials.(beamUsed).tensileYield; % Pa
     
+    beamUsedo = materials{moIndex};
+    Eo = Materials.(beamUsedo).E;
+    rhoBeamo = Materials.(beamUsedo).rho; % (kg/m^3)
+    shearStrengtho = Materials.(beamUsedo).shearStrength; % Pa
+    shearModuluso = Materials.(beamUsedo).shearModulus; % Pa
+    ultimateTensileo = Materials.(beamUsedo).ultimateTensile; % Pa
+    tensileYieldo = Materials.(beamUsedo).tensileYield; % Pa
+    
+    
     m = 1;
     n = 1;
     
 for m = 1:length(t_cap_vec)
     t_cap2 = t_cap_vec(m);
     
+%     t_cap1_arr = h1*t_cap1/h1(1);
+%     t_cap2_arr = h2*t_cap2/h2(1);
+
+    t_cap1i_arr = h1i*t_cap1i/h1i(1);
+    t_cap2i_arr = h2i*t_cap2i/h2i(1);
+    t_cap1o_arr = h1o*t_cap1o/h1i(1);
+    t_cap2o_arr = h2o*t_cap2o/h2i(1);
+    
     for n = 1:length(b_cap_vec)
         b_cap2 = b_cap_vec(n);
         
-        beamWeightEq = @(b_cap,t_cap,h) rhoBeam*t_cap*(2*b_cap+h-2*t_cap); % kg/m
-        beamWeight = beamWeightEq(b_cap1,t_cap1,h1) + beamWeightEq(b_cap2,t_cap2,h2);
+%         b_cap1_arr = h1*b_cap1/h1(1);
+%         b_cap2_arr = h2*b_cap2/h2(1);
+        b_cap1i_arr = h1i*b_cap1i/h1i(1);
+        b_cap2i_arr = h2i*b_cap2i/h2i(1);
+        b_cap1o_arr = h1o*b_cap1o/h1i(1);
+        b_cap2o_arr = h2o*b_cap2o/h2i(1);
 
+        beamWeightEq = @(rhoBeam,b_cap,t_cap,h) rhoBeam*t_cap.*(2.*b_cap+h-2.*t_cap); % kg/m
+%         beamWeight = beamWeightEq(b_cap1,t_cap1,h1) + beamWeightEq(b_cap2,t_cap2,h2); % for constant cap dimensions
+%         beamWeight = beamWeightEq(b_cap1_arr,t_cap1_arr,h1) + beamWeightEq(b_cap2_arr,t_cap2_arr,h2); % for changing cap dimensions
+        
+        beamWeighti = beamWeightEq(rhoBeam,b_cap1i_arr,t_cap1i_arr,h1i) + beamWeightEq(rhoBeam,b_cap2i_arr,t_cap2i_arr,h2i);
+        beamWeighto = beamWeightEq(rhoBeamo,b_cap1o_arr,t_cap1o_arr,h1o) + beamWeightEq(rhoBeamo,b_cap2o_arr,t_cap2o_arr,h2o);
+        beamWeight = [beamWeighti beamWeighto];
+        
         %{
         %bending
         https://ocw.mit.edu/courses/aeronautics-and-astronautics/16-01-unified-engineering-i-ii-iii-iv-fall-2005-spring-2006/systems-labs-06/spl10.pdf
@@ -454,20 +497,30 @@ for m = 1:length(t_cap_vec)
         %beam stiffness in bending: k = 3EI/L^3
         https://engineering.sjsu.edu/e10/wp-content/uploads/Structure_Stiffness_S13.pdf
         %} 
-        
+
         % moment of inertia
-        I_cap = @(b_cap,t_cap,h) b_cap*t_cap.^3/12 + b_cap*t_cap*(h/2-t_cap/2).^2;
-        I_middle = @(b_cap,t_cap,h) b_cap*(h-2*t_cap).^3/12;
+        I_cap = @(b_cap,t_cap,h) b_cap.*t_cap.^3/12 + b_cap.*t_cap.*(h./2-t_cap/2).^2;
+        I_middle = @(b_cap,t_cap,h) b_cap.*(h-2.*t_cap).^3/12;
         I_combined = @(b_cap,t_cap,h) 2*I_cap(b_cap,t_cap,h) + I_middle(b_cap,t_cap,h);
+        A_beamEq = @(b_cap,t_cap,h) 2*b_cap.*t_cap + b_cap.*(h-2*t_cap);
+         
+%         I1 = I_combined(b_cap1,t_cap1,h1); % for constant cap dimensions
+%         I2 = I_combined(b_cap2,t_cap2,h2);
+%         A_beam1 = A_beamEq(b_cap1,t_cap1,h1);
+%         A_beam2 = A_beamEq(b_cap2,t_cap2,h2);
+
+%         I1 = I_combined(b_cap1_arr,t_cap1_arr,h1); % for changing cap dimensions
+%         I2 = I_combined(b_cap2_arr,t_cap2_arr,h2);
+%         A_beam1 = A_beamEq(b_cap1_arr,t_cap1_arr,h1);
+%         A_beam2 = A_beamEq(b_cap2_arr,t_cap2_arr,h2);
+
+        I1 = [I_combined(b_cap1i_arr,t_cap1i_arr,h1i) I_combined(b_cap1o_arr,t_cap1o_arr,h1o)]; % for changing cap dimensions
+        I2 = [I_combined(b_cap2i_arr,t_cap2i_arr,h2i) I_combined(b_cap2o_arr,t_cap2o_arr,h2o)];
+        A_beam1 = [A_beamEq(b_cap1i_arr,t_cap1i_arr,h1i) A_beamEq(b_cap1o_arr,t_cap1o_arr,h1o)];
+        A_beam2 = [A_beamEq(b_cap2i_arr,t_cap2i_arr,h2i) A_beamEq(b_cap2o_arr,t_cap2o_arr,h2o)];
         
-        A_beamEq = @(b_cap,t_cap,h) 2*b_cap*t_cap + b_cap*(h-2*t_cap);
-        
-        I1 = I_combined(b_cap1,t_cap1,h1);
-        I2 = I_combined(b_cap2,t_cap2,h2);
-        A_beam1 = A_beamEq(b_cap1,t_cap1,h1);
-        A_beam2 = A_beamEq(b_cap2,t_cap2,h2);
-        K1 = 3*E*I1/(b/2)^3; % front spar stiffness
-        K2 = 3*E*I2/(b/2)^3; % rear spar stiffness
+%         K1 = 3*E*I1/(b/2)^3; % front spar stiffness
+%         K2 = 3*E*I2/(b/2)^3; % rear spar stiffness
 %         P1 = q .* K1./(K1+K2);
 %         P2 = q .* K2./(K1+K2);
 %         P1(end) = 0;  
@@ -504,6 +557,9 @@ for m = 1:length(t_cap_vec)
             Ss2(i)  = abs(SsF2(i) - SsM2(i));
         end
         for j = 2:length(x) % 0 deflection at wing root
+            if j > foldIndex
+                E = Eo;
+            end
             theta1(j) = theta1(j-1) + 0.5*(M1(j)/E/I1(j) + M1(j-1)/E/I1(j-1))*xDelta; % non-dimensional 
             theta2(j) = theta2(j-1) + 0.5*(M2(j)/E/I2(j) + M2(j-1)/E/I2(j-1))*xDelta;
             w1(j) = w1(j-1) + 0.5*(theta1(j)+theta1(j-1))*xDelta; % m 
@@ -573,6 +629,7 @@ for m = 1:length(t_cap_vec)
         maxW(m,n) = max(w1);
         
         fprintf('%12s weight: %.0f kg | %.0f, %.0f, %.0f, %.0f | %.4f, %.4f\n', beamUsed,sum(beamWeight*xDelta),b_cap1*1000,t_cap1*1000,b_cap2*1000,t_cap2*1000,MS1(m,n),MS2(m,n));
+        fprintf('outboard: %s | %.0f, %.0f, %.0f, %.0f\n', beamUsedo,b_cap1o*1000,t_cap1o*1000,b_cap2o*1000,t_cap2o*1000);
     end
 end
 end
@@ -628,4 +685,8 @@ foldM1 = M1(foldIndex);
 foldM2 = M2(foldIndex);
 foldSs1 = Ss1(foldIndex);
 foldSs2 = Ss2(foldIndex);
+foldh1 = h1(foldIndex);
+foldh2 = h2(foldIndex);
 
+F1 = foldM1/foldh1;
+F2 = foldM2/foldh2;

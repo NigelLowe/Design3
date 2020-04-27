@@ -380,5 +380,5 @@ ylim([0, s])
 
 % Get an array for the chord at each y node
 VLM_surface_plotter_3D(c_bar, lambda_vec, x_1n_sweep, x_2n_sweep, y_rec_plot, z_surf, dL_ts_wing, total_rows, total_cols)
-title('Lift Distribution for tapered swept wing'); 
+title('Lift Distribution for tapered unswept wing'); 
 ylim([0, s])
