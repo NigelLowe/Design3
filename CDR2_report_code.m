@@ -10,10 +10,10 @@ load('FATE_parameters.mat')
 %Define Mission Constants
 mission_PL           = [3500,500,3500,500];
 mission_weight       = [18.5e3,18.5e3,22.5e3,22.5e3];
-endurance_target_mat = [25,28,40,51];
+endurance_target_mat = [25,36,50,60];
 cruising_alt_target  = 40000;
 
-missionIndecies = 3:4;
+missionIndecies = 1:4;
 if exist('plotOtherGraphs','var') 
     mission_PL = pl_num;
     mission_weight = tow_num;
@@ -37,10 +37,10 @@ for mission_index = missionIndecies
         end
         
         %Refine Cruising Alt Sweep
-        cruising_alt_mat = convlength(linspace(40e3,40e3,1),'ft','m');
+        cruising_alt_mat = convlength(linspace(30e3,40e3,10),'ft','m');
         
         % Min Drag Speed factor Sweep
-        min_drag_factor_mat = linspace(1,1,1);
+        min_drag_factor_mat = linspace(0.5,1.5,10);
         
         for m_index = 1:length(cruising_alt_mat)
             
@@ -137,6 +137,24 @@ for mission_index = missionIndecies
             legend('Air Range (km.)','mean stall line','Mach 0.5','Design Point','location','best')
     end
   
+    if mission_index == 1
+        saveas(figure(1),'Mission_1a_Endurance','png')
+        saveas(figure(5),'Mission_1a_Range','png')
+        
+    elseif mission_index == 2
+        
+        saveas(figure(2),'Mission_1b_Endurance','png')
+        saveas(figure(6),'Mission_1b_Range','png')
+        
+    elseif mission_index == 3
+        
+        saveas(figure(3),'Mission_2a_Endurance','png')
+        saveas(figure(7),'Mission_2a_Range','png')
+        
+    elseif mission_index == 4
+        saveas(figure(4),'Mission_2b_Endurance','png')
+        saveas(figure(8),'Mission_2b_Range','png')
+       
+    end
+    
 end
-
-
