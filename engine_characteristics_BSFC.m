@@ -1,7 +1,9 @@
-a = (287*temp*1.4)^0.5;
+%% Get BSFC for a given mach/alt/power setting through 3 way interpolation of FATE_BSFC matrix
+
+a = (287*temp*1.4)^0.5; %assume ideal gas - SI
 mach(i)      = v(i)/a;
 
-%find closest mach no, altitude and power
+%find closest mach no, altitude
 [ ~, mach_ii] = min(abs(FATE_mach-mach(i)));
 [ ~, alt_ii]  = min(abs(FATE_alt-alt(i)));
 
@@ -48,7 +50,7 @@ end
 Power_vec = permute(FATE_Power(mach_ind(1),alt_ind(1),:),[3 2 1])*1e3;
 [ ~, Power_ii]  = min(abs(Power_vec - Power(i)));
 
-%Determine if nex
+%Determine if next point is infront or behind
 if (Power_vec(Power_ii) - Power(i)) > 0
     
     power_ref(1) = Power_vec(Power_ii-1);
@@ -67,7 +69,7 @@ else
     
 end  
 
-
+% Build 3D [2x2x2] cube
 v_BSFC(1:2,1:2,1) = [FATE_BSFC(mach_ind(1),alt_ind(1),power_ind(1)),FATE_BSFC(mach_ind(1),alt_ind(2),power_ind(1));...
                      FATE_BSFC(mach_ind(2),alt_ind(1),power_ind(1)),FATE_BSFC(mach_ind(2),alt_ind(2),power_ind(1))];
 
@@ -75,8 +77,7 @@ v_BSFC(1:2,1:2,2) = [FATE_BSFC(mach_ind(1),alt_ind(1),power_ind(2)),FATE_BSFC(ma
                      FATE_BSFC(mach_ind(2),alt_ind(1),power_ind(2)),FATE_BSFC(mach_ind(2),alt_ind(2),power_ind(2))];
                  
 %Find in spreadsheet (iterpolate)
-
-BSFC(i)  = interp3(alt_ref,mach_ref,power_ref,v_BSFC,alt(i),mach(i),Power(i))/(60*60*1e3);
+BSFC(i)  = interp3(alt_ref,mach_ref,power_ref,v_BSFC,alt(i),mach(i),Power(i))/(60*60*1e3); %convert to SI (kg/s/N)
 
 
                 
