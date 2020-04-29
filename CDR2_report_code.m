@@ -71,7 +71,7 @@ for mission_index = missionIndecies
          hold on
 
             [~,alt_grid] = meshgrid(cruising_alt_mat,cruising_alt_mat);
-            [c1,h1] = contour(results_average_velocity(:,:,mission_index)*1.9438,alt_grid*3.2808,results_useful_loiter(:,:,mission_index),'LineWidth',2);
+            [c1,h1] = contour(results_average_velocity(:,:,mission_index)*1.9438,alt_grid*3.2808,results_endurance(:,:,mission_index),'LineWidth',2);
             clabel(c1,h1)
 
             %calculate/plot stall speeds
