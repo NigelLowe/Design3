@@ -256,6 +256,25 @@ for mission = missionType
         cg_percent_vec{row,col} = cg/L*100; %(cg - x_ac)/c_bar; %
         allWeight{row,col} = totalWeight;
         
+        % Print order of components
+        payload(4).updateWeight(pl_num-500);
+        allArray = [basic prop payload fuelStart];
+        totalSize = allArray.length;
+        allWeights(1:totalSize) = allArray;
+
+        keys = cell(1,totalSize);
+        [values,valuesW] = deal(zeros(1,totalSize));
+        for i = 1:totalSize
+            keys{i} = allWeights(i).name;
+            values(i) = allWeights(i).location/L;
+            valuesW(i) = allWeights(i).weight;
+        end
+        [InOrderLocation, sortIdx] = sort(values);
+        InOrderNames = keys(sortIdx);
+        InOrderWeights = valuesW(sortIdx);
+        front2BackLocations = [InOrderNames; num2cell(InOrderLocation); num2cell(InOrderWeights)];
+        disp('       Object name     | location (n.d.) | weight (kg)')
+        disp(front2BackLocations');
     end
 end
 
@@ -331,27 +350,6 @@ xlabel('cg location (% aircraft length)')
 xlim(xLimits)
 ylim(yLimits2)
 title(missionType{2})
-
-
-
-% Print order of components
-allArray = [basic prop payload fuelStart];
-totalSize = allArray.length;
-allWeights(1:totalSize) = allArray;
-
-keys = cell(1,totalSize);
-[values,valuesW] = deal(zeros(1,totalSize));
-for i = 1:totalSize
-    keys{i} = allWeights(i).name;
-    values(i) = allWeights(i).location/L;
-    valuesW(i) = allWeights(i).weight;
-end
-[InOrderLocation, sortIdx] = sort(values);
-InOrderNames = keys(sortIdx);
-InOrderWeights = valuesW(sortIdx);
-front2BackLocations = [InOrderNames; num2cell(InOrderLocation); num2cell(InOrderWeights)];
-disp('       Object name     | location (n.d.) | weight (kg)')
-disp(front2BackLocations');
 
 
 disp('----------------------------Summary----------------------------')

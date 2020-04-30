@@ -1,13 +1,13 @@
 % Structural Analysis
 % 460368355
 
-%if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
+if ~exist('plotOtherGraphs','var') % if statement for this file use in other functions
 clear
     
     % general parameters
     %albatross_parameters_maritime;
     albatross_parameters_airfield;
-%end
+end
 clc
 close all
 
@@ -54,86 +54,6 @@ cy = cr - 2/b*(cr-ct)*x; % trapezoid. And local chord
 %% volume in wing - NASA1015
 
 % start at (0,0)
-FX_74_Cl5_140 = [1.000000  0.000090
-  0.997540  0.001890
-  0.990700  0.006240
-  0.980370  0.011500
-  0.966980  0.017410
-  0.950440  0.024020
-  0.930640  0.031880
-  0.907750  0.040010
-  0.882020  0.048480
-  0.853700  0.057180
-  0.823090  0.066160
-  0.790480  0.075490
-  0.756160  0.085100
-  0.720430  0.094820
-  0.683590  0.104460
-  0.645940  0.113850
-  0.607780  0.122870
-  0.569370  0.131370
-  0.530990  0.139160
-  0.492650  0.146040
-  0.454350  0.151770
-  0.416380  0.156060
-  0.378870  0.158680
-  0.342040  0.159440
-  0.306090  0.158200
-  0.271200  0.154930
-  0.237600  0.149640
-  0.205490  0.142430
-  0.175040  0.133440
-  0.146480  0.122920
-  0.119990  0.111100
-  0.095760  0.098260
-  0.073950  0.084590
-  0.054680  0.070300
-  0.038110  0.055760
-  0.024330  0.041450
-  0.013380  0.027690
-  0.005480  0.015180
-  0.000980  0.005180
-  0.000000 -0.000210
-  0.000980 -0.004350
-  0.005480 -0.007870
-  0.013380 -0.008710
-  0.024330 -0.007540
-  0.038110 -0.005390
-  0.054680 -0.002920
-  0.073950 -0.000220
-  0.095760  0.002700
-  0.119990  0.005840
-  0.146480  0.009210
-  0.175040  0.012790
-  0.205490  0.016510
-  0.237600  0.020300
-  0.271200  0.024100
-  0.306090  0.027860
-  0.342040  0.031520
-  0.378870  0.035030
-  0.416380  0.038320
-  0.454350  0.041340
-  0.492650  0.044000
-  0.530990  0.046240
-  0.569370  0.048010
-  0.607780  0.049250
-  0.645940  0.049920
-  0.683590  0.049970
-  0.720430  0.049360
-  0.756160  0.048070
-  0.790480  0.046080
-  0.823090  0.043340
-  0.853700  0.039780
-  0.882020  0.035370
-  0.907750  0.030130
-  0.930640  0.024340
-  0.950440  0.018510
-  0.966980  0.012900
-  0.980370  0.007560
-  0.990700  0.003190
-  0.997540  0.000680
-  1.000000 -0.000030];
-
 FX_72_MS_150A = [1.000000  0.000000
   0.998930  0.000370
   0.990390  0.003310
@@ -390,7 +310,7 @@ q_mat_orig = q_mat; % kg/m^2
 %totalLift = sum(q_orig*xDelta); % assume triangular shaped distribution along chord (largest load at leading edge)
 totalLift = sum(sum(q_mat.*cy/nYDelta)*xDelta);
 fprintf('total Lift (half): %.0f kg\n', totalLift);
-fprintf('weight (half): %.0f kg\n\n', W/2);
+fprintf('aircraft weight (half): %.0f kg\n\n', W/2);
 
 LPerSpanOrig = sum(q_mat.*cy/nYDelta);
 LPerSpan  = sum(q.*cy/nYDelta);
@@ -410,34 +330,37 @@ h2i = h2(1:foldIndex);
 h2o = h2(foldIndex+1:end);
 
 % FX_72_MS_150A
-b_cap1 = 165e-3; % m - front spar
-t_cap1 = 10e-3; % m
-b_cap2 = 125e-3; % m - rear spar % need deflection of both beams to be the same so there is no twisting from normal lift force
-t_cap2 = 10e-3; % m
+% b_cap1 = 165e-3; % m - front spar
+% t_cap1 = 10e-3; % m
+% b_cap2 = 125e-3; % m - rear spar % need deflection of both beams to be the same so there is no twisting from normal lift force
+% t_cap2 = 10e-3; % m
 
 % inboard beam properties
-b_cap1i = 165e-3; 
+b_cap1i = 165e-3; %275e-3;
 t_cap1i = 10e-3;
-b_cap2i = 125e-3;
+b_cap2i = 125e-3; %215e-3;
 t_cap2i = 10e-3;
 
 % outboard beam properties - AL7475
-b_cap1o = 100e-3; %275e-3; 
+b_cap1o = 100e-3; %170e-3; %275e-3; 
 t_cap1o = 10e-3;
-b_cap2o = 80e-3; %215e-3;
+b_cap2o = 80e-3; %130e-3; %215e-3;
 t_cap2o = 10e-3;
 
+% all AL7075 - 233kg
+% TI inboard - 244kg
 
 b_cap_vec = b_cap2i; % m
-t_cap_vec = t_cap2; % m
+t_cap_vec = t_cap2i; % m
 
 FS = 1.5; % STANAG Subpart C 303 - "F.O.S no lower than 1.5 for structures whose failure would lead to a hazardous or more serious failure condition"
 
-disp('Weight of half beam')
+disp('Weight of half beam     | beam dimensions | MoS (front, rear)')
 materials = fieldnames(Materials);
-for mIndex = 4%:length(materials)
-    moIndex = 4;
+for mIndex = 7%:length(materials) % outboard (7 = TI64)
+    moIndex = 4; % inboard (4 = AL7475-T7651)
     
+    % inboard beam properties
     beamUsed = materials{mIndex};
     E = Materials.(beamUsed).E;
     rhoBeam = Materials.(beamUsed).rho; % (kg/m^3)
@@ -446,6 +369,7 @@ for mIndex = 4%:length(materials)
     ultimateTensile = Materials.(beamUsed).ultimateTensile; % Pa
     tensileYield = Materials.(beamUsed).tensileYield; % Pa
     
+    % outboard beam properties
     beamUsedo = materials{moIndex};
     Eo = Materials.(beamUsedo).E;
     rhoBeamo = Materials.(beamUsedo).rho; % (kg/m^3)
@@ -519,13 +443,14 @@ for m = 1:length(t_cap_vec)
         A_beam1 = [A_beamEq(b_cap1i_arr,t_cap1i_arr,h1i) A_beamEq(b_cap1o_arr,t_cap1o_arr,h1o)];
         A_beam2 = [A_beamEq(b_cap2i_arr,t_cap2i_arr,h2i) A_beamEq(b_cap2o_arr,t_cap2o_arr,h2o)];
         
+%         % if force distribution between spars besed only on stiffness
 %         K1 = 3*E*I1/(b/2)^3; % front spar stiffness
 %         K2 = 3*E*I2/(b/2)^3; % rear spar stiffness
 %         P1 = q .* K1./(K1+K2);
 %         P2 = q .* K2./(K1+K2);
 %         P1(end) = 0;  
 %         P2(end) = 0;
-        P1 = q .* (rearSparLoc-0.25)/(rearSparLoc-frontSparLoc); % if distance determines force distribution
+        P1 = q .* (rearSparLoc-0.25)/(rearSparLoc-frontSparLoc); % kg/m - if distance determines force distribution
         P2 = q .* (0.25-frontSparLoc)/(rearSparLoc-frontSparLoc);
         
         
@@ -628,8 +553,9 @@ for m = 1:length(t_cap_vec)
         maxM(m,n) = max(M1);
         maxW(m,n) = max(w1);
         
-        fprintf('%12s weight: %.0f kg | %.0f, %.0f, %.0f, %.0f | %.4f, %.4f\n', beamUsed,sum(beamWeight*xDelta),b_cap1*1000,t_cap1*1000,b_cap2*1000,t_cap2*1000,MS1(m,n),MS2(m,n));
-        fprintf('outboard: %s | %.0f, %.0f, %.0f, %.0f\n', beamUsedo,b_cap1o*1000,t_cap1o*1000,b_cap2o*1000,t_cap2o*1000);
+        fprintf('weight  : %.0f kg\n',sum(beamWeight*xDelta))
+        fprintf('inboard : %12s | %.0f, %.0f, %.0f, %.0f | %.4f, %.4f\n', beamUsed,b_cap1i*1000,t_cap1i*1000,b_cap2i*1000,t_cap2i*1000,MS1(m,n),MS2(m,n));
+        fprintf('outboard: %12s | %.0f, %.0f, %.0f, %.0f\n\n', beamUsedo,b_cap1o*1000,t_cap1o*1000,b_cap2o*1000,t_cap2o*1000);
     end
 end
 end
@@ -679,14 +605,45 @@ q_outer = q_mat(:,foldIndex:end); % N/m^2 - lift on outer wing
 
 
 % need to find what moment is applied at the lugs that is trying to fold the wings up
-foldSf1 = Sf1(foldIndex);
-foldSf2 = Sf2(foldIndex);
-foldM1 = M1(foldIndex);
-foldM2 = M2(foldIndex);
-foldSs1 = Ss1(foldIndex);
-foldSs2 = Ss2(foldIndex);
-foldh1 = h1(foldIndex);
-foldh2 = h2(foldIndex);
+foldSf1 = Sf1(foldIndex); % shear force front
+foldSf2 = Sf2(foldIndex); % shear force rear
+foldM1 = M1(foldIndex); % moment front
+foldM2 = M2(foldIndex); % moment rear 
+foldSs1 = Ss1(foldIndex); % shear stress front
+foldSs2 = Ss2(foldIndex); % shear stress rear
+foldh1 = h1(foldIndex); % spar height front
+foldh2 = h2(foldIndex); % spar height rear
 
-F1 = foldM1/foldh1;
-F2 = foldM2/foldh2;
+F1 = foldM1/foldh1; % (kg) axial force front
+F2 = foldM2/foldh2; % (kg) axial force rear
+Lfold = q(:,foldIndex); % full lift distribution at fold
+L1 = sum(P1(:,foldIndex)*xDelta); % (kg/m) - lift force at fold front
+L2 = sum(P2(:,foldIndex)*xDelta); % (kg/m) - lift force at fold reat
+
+% front lug calculations
+D1 = 50e-3; % m - hole diameter
+W1 = 125e-3; % m - lug width
+R1 = W1/2; % m - lug radius
+t1 = 50e-3; % m - lug thickness
+A1 = R1 - D1/2*(1-cosd(45));
+A2 = R1 - D1/2;
+A3 = A2;
+A4 = A1;
+Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
+
+%fprintf('Front \nR/D = %.2f (range 0.7-4)\nD/t = %.1f (range 2-30)\nW/D = %.2f (range 1-5)\nAav/Abr = %.2f (range 0-1.4)\n',R1/D1,D1/t1,W1/D1,Aav1/(D1*t1));
+
+Kbr = 1.15;
+Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
+Ktru = 0.55; % Aav/Abr value much higher than graph values. Need to adjust --- though it does plateau at the end
+
+Ftu = Materials.AL7075.ultimateTensile;
+
+P1s = Kbr*Ftu*D1*t1; % N - shear bearing stress
+P1te = Kt*Ftu*(W1-D1)*t1; % N - tension
+P1tr = Ktru*Ftu*D1*t1; % N - transverse load
+
+F1 = F1/2;
+MS1s = P1s/(F1*g*1.5*1.15) - 1;
+MS1te = P1te/(F1*g*1.5*1.15) - 1;
+MS1tr = P1tr/(F1*g*1.5*1.15) - 1;
