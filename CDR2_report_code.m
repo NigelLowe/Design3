@@ -7,13 +7,15 @@ clc
 % DESIGN 3 - Performance Script - Group 3
 load('FATE_parameters.mat')
 
+GraphGood
+
 %Define Mission Constants
 mission_PL           = [3500,500,3500,500];
 mission_weight       = [18.5e3,18.5e3,22.5e3,22.5e3];
-endurance_target_mat = [25,28,40,51];
+endurance_target_mat = [25,37,48,62];
 cruising_alt_target  = 40000;
 
-missionIndecies = 3:4;
+missionIndecies = 1:4;
 if exist('plotOtherGraphs','var') 
     mission_PL = pl_num;
     mission_weight = tow_num;
@@ -37,10 +39,10 @@ for mission_index = missionIndecies
         end
         
         %Refine Cruising Alt Sweep
-        cruising_alt_mat = convlength(linspace(40e3,40e3,1),'ft','m');
+        cruising_alt_mat = convlength(linspace(30e3,40e3,5),'ft','m');
         
         % Min Drag Speed factor Sweep
-        min_drag_factor_mat = linspace(1,1,1);
+        min_drag_factor_mat = linspace(0.5,1.5,5);
         
         for m_index = 1:length(cruising_alt_mat)
             
@@ -80,7 +82,7 @@ for mission_index = missionIndecies
 
             end
 
-           plot(stall_speed*1.9438,cruising_alt_mat*3.2808,'--r','LineWidth',2)
+           plot(stall_speed*1.9438,cruising_alt_mat*3.2808,'LineWidth',2,'linestyle','--','color',myred)
 
             %calculate/plot mach 0.5
 
@@ -91,7 +93,7 @@ for mission_index = missionIndecies
 
             end
 
-            plot(mach_limit_speed*1.9438,cruising_alt_mat*3.2808,'--b','LineWidth',2)
+            plot(mach_limit_speed*1.9438,cruising_alt_mat*3.2808,'LineWidth',2,'linestyle','--','color',myblue)
 
             %locate design point (alt and velocity)
             [ ~, alt_ii] = min(abs(cruising_alt_mat-cruising_alt_target/3.2808));
@@ -101,15 +103,18 @@ for mission_index = missionIndecies
             scatter([results_average_velocity(alt_ii,vel_ii,mission_index)*1.9438],[cruising_alt_target],'MarkerFaceColor',[0 0 0],'Marker','pentagram','SizeData',1000)
 
             %format figure
-            set(gca,'fontsize',14)
-            xlabel('True Airspeed (kts.)')
-            ylabel('Altitude (ft.)')
+            set(gca,'fontsize',18)
+            set(gcf, 'Position', [100 100 1000 750])
+            Ytick = strsplit(num2str(get(gca, 'Ytick')));
+            set(gca,'YtickLabel', Ytick);
+            xlabel('Average True Airspeed (kts.)')
+            ylabel('Final Cruising Altitude (ft.)')
             grid on
 
-            ylim([(min(cruising_alt_mat*3.2808) - 1e3) (max(cruising_alt_mat*3.2808) + 1e3)]);
+            %ylim([(min(cruising_alt_mat*3.2808) - 1e3) (max(cruising_alt_mat*3.2808) + 1e3)]);
 
             %add legend
-            legend('Endurance (hrs)','mean stall line','Mach 0.5','Design Point','location','best')
+            legend('Endurance (hrs)','Mean stall line','Mach 0.5','Design Point','location','best')
 
 
      %create ALT vs Vel Contour (with range)
@@ -120,23 +125,47 @@ for mission_index = missionIndecies
             clabel(c2,h2)
 
         % Plot stall line
-        plot(stall_speed*1.9438,cruising_alt_mat*3.2808,'--r','LineWidth',2)
+        plot(stall_speed*1.9438,cruising_alt_mat*3.2808,'LineWidth',2,'linestyle','--','color',myred)
 
 
         % Plot high speed line
-        plot(mach_limit_speed*1.9438,cruising_alt_mat*3.2808,'--b','LineWidth',2)
+        plot(mach_limit_speed*1.9438,cruising_alt_mat*3.2808,'LineWidth',2,'linestyle','--','color',myblue)
 
             scatter([results_average_velocity(alt_ii,vel_ii,mission_index)*1.9438],[cruising_alt_target],'MarkerFaceColor',[0 0 0],'Marker','pentagram','SizeData',1000)
 
-            set(gca,'fontsize',14)
-            xlabel('True Airspeed (kts.)')
-            ylabel('Altitude (ft.)')
+            set(gca,'fontsize',18)
+            set(gcf, 'Position', [100 100 1000 750])
+            set(gca,'YtickLabel', Ytick);
+            xlabel('Average True Airspeed (kts.)')
+            ylabel('Final Cruising Altitude (ft.)')
             grid on
 
-            ylim([(min(cruising_alt_mat*3.2808) - 1e3) (max(cruising_alt_mat*3.2808) + 1e3)]);
-            legend('Air Range (km.)','mean stall line','Mach 0.5','Design Point','location','best')
+            %ylim([(min(cruising_alt_mat*3.2808) - 1e3) (max(cruising_alt_mat*3.2808) + 1e3)]);
+            legend('Air Range (km.)','Mean stall line','Mach 0.5','Design Point','location','best')
     end
   
+    if mission_index == 1
+        saveas(figure(1),'Mission_1a_Endurance','png')
+        saveas(figure(5),'Mission_1a_Range','png')
+        
+    elseif mission_index == 2
+        
+        saveas(figure(2),'Mission_1b_Endurance','png')
+        saveas(figure(6),'Mission_1b_Range','png')
+        
+    elseif mission_index == 3
+        
+        saveas(figure(3),'Mission_2a_Endurance','png')
+        saveas(figure(7),'Mission_2a_Range','png')
+        
+    elseif mission_index == 4
+        saveas(figure(4),'Mission_2b_Endurance','png')
+        saveas(figure(8),'Mission_2b_Range','png')
+       
+    end
+    
 end
+
+
 
 

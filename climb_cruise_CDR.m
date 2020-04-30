@@ -2,13 +2,13 @@
 
     g    = 9.81;
 
-    T0   = 288;
+    T0   = 288;      % +30; ISA + 30
 
     L_r  = 0.0065; %lapse rate for temp
 
     R    = 287;
 
-    rho0 = 1.225;
+    rho0 = 1.225;    %1.10949; ISA + 30
 
     P0   = 101300;
 
@@ -30,7 +30,7 @@
     alt(1)     = 0; % set altitude to 0
     
     clear fused;
-    
+
     counter_2  = 0; %counter for sake of PL drop
 
     PL_dropped = 0;
@@ -77,7 +77,7 @@
             
                 v(i) = (L(i)/(0.5*rho(i)*S*cl(i)))^0.5;
                 
-                engine_characteristics
+                engine_characteristics_pmax
                 
                 cd(i)   = cdo + k*(cl(i)-clmin)^2;
             
@@ -94,6 +94,7 @@
                     Thrust(i) = roc(i)*L(i)/v(i)+D(i);
                     Power(i) = Thrust(i)*v(i)/prop_n;
                     
+                    
                 else
                     
                     roc(i)    = ROC_max;
@@ -108,7 +109,7 @@
             
             v(i)= (L(i)/(0.5*rho(i)*S*cl(i)))^0.5;
             
-            engine_characteristics
+            engine_characteristics_pmax
             
             cd(i)   = cdo + k*(cl(i)-clmin)^2;
             
@@ -119,10 +120,10 @@
             alt(i+1) = alt(i);
             
         end
+        
+        engine_characteristics_BSFC
        
         w(i+1) = w(i) - Power(i)*BSFC(i)*time_res*3600; %end of segement fuel
-        
-        fused(i) = BSFC(i)*Power(i)*time_res*3600; %kg, as time res is in hrs)
         
         d(i+1) = d(i) + v(i)*time_res*3600;
 
@@ -131,7 +132,7 @@
         i = i+1;
 
      end
-     
+    
      t_run = t;
      [ ~, loiter_start_t] = min(abs( d-loiter_point));
      loiter_start_t = t(loiter_start_t);
