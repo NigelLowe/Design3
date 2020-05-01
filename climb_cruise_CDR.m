@@ -108,9 +108,7 @@
         else %Cruise or Loiter (aircraft needs to be at cruising level)
             
             v(i)= (L(i)/(0.5*rho(i)*S*cl(i)))^0.5;
-            
-            engine_characteristics_pmax
-            
+         
             cd(i)   = cdo + k*(cl(i)-clmin)^2;
             
             Thrust(i) = cd(i)*(0.5*rho(i)*S*v(i)^2);
