@@ -13,7 +13,7 @@ close all
 
 % airfield field 2, maritime last 2
 pl_vec = [500 3500]; % single payload value for run
-en_vec = [51 40 34 24];  % single endurance value for run
+en_vec = [62 48 37 25];  % single endurance value for run
 tow_vec = [22.5e3 18.5e3]; % TOW for run
 
 insideFuel = [];
@@ -91,14 +91,17 @@ for mission = missionType
         sweepvt = 10; % deg - vertical tail sweep
 
         Kinl = 1.25; % for inlets in fuselage
+        rho0 = 1.225;
         q = 0.5*rho0*V^2*0.02088547; % lb/ft^2 - max dynamic pressure
 
         Mland = MTOW; % lb - max landing weight
         Ln = 1.2*39.3701; % in - nose landing gear
         Lm = 1.45*39.3701; % in - main landing gear weight 
         fuselageWeight = 11.03*Kinl^1.23*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.61; % USN - Nicolai
-        wingWeight = 2 * 0.00428*S_ft^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai % multiply by 1.75 since the C-2 Grumman has a similar wingspan and folding wings with outer weight 3000lb.
-        % https://www.tested.com/tech/568755-airplane-origami-how-folding-wings-work/     ^
+        wingWeight = 0.00428*S_ft^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai % multiply by 1.75 since the C-2 Grumman has a similar wingspan and folding wings with outer weight 3000lb.
+        wingWeight = 1.5967*(wingWeight + 0.03386*(MTOW*n)^0.2477*(S_ft)^1.244*(1-5.2*2/b)^(1.307));
+
+        % https://www.tested.com/tech/568755-airplane-origami-how-folding-wings-work/     
         vertTailWeight = 0.0034*((MTOW*n)^0.813*Sht^0.584*(bht/trht)^0.033*(c_bar*Lt)^0.28)^0.915; % Nicolai - scale since have V tail
         horiTailWeight = 0.19*((MTOW*n)^0.363*Svt^1.089*M0^0.601*Lt^(-0.726)*(1+Sr/Svt)^0.217*ARvt^0.337*(1+taper_rvt)^0.363*(cosd(sweepvt)^(-0.484)))^1.014; % Nicolai - scale since have v tail
         tailWeight = vertTailWeight*sind(tailAngle)^2+horiTailWeight*cosd(tailAngle)^2; % lb - scale since using V tail https://vtechworks.lib.vt.edu/bitstream/handle/10919/26482/Dissertation3a.pdf?sequence=1&isAllowed=y
@@ -355,7 +358,7 @@ title(missionType{2})
 disp('----------------------------Summary----------------------------')
 disp('     Mission   | Payload |    OEW CG   |   ZFW CG   |  Start CG')
 disp(finalParams(:,1:5));
-disp('     Mission   | Payload |    Basic    | Propulsion |    Fuel')
+disp('     Mission   | Payload |      Basic    | Propulsion  |    Fuel')
 disp(componentWeights);
 disp('     Mission   | Payload |      OEW       |      TOW')
 disp(finalParams(:,[1,2,6,7]));

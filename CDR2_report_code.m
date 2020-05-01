@@ -51,16 +51,16 @@ for mission_index = missionIndecies
                 cruise_alt      = cruising_alt_mat(m_index);
                 min_drag_factor = min_drag_factor_mat(n_index);
              
-        climb_cruise_CDR
+                climb_cruise_CDR
 
-        results_TOW(m_index,n_index,mission_index)               = TOW;
-        results_endurance(m_index,n_index,mission_index)         = max(t);
-        results_range(m_index,n_index,mission_index)             = max(d);
-        results_useful_loiter(m_index,n_index,mission_index)     = useful_loiter;
-        results_average_velocity(m_index,n_index,mission_index)  = mean(v);
-        results_max_cl(m_index,n_index,mission_index)            = max(cl);
-        results_mean_weight(m_index,n_index,mission_index)       = mean(w);
-        
+                results_TOW(m_index,n_index,mission_index)               = TOW;
+                results_endurance(m_index,n_index,mission_index)         = max(t);
+                results_range(m_index,n_index,mission_index)             = max(d);
+                results_useful_loiter(m_index,n_index,mission_index)     = useful_loiter;
+                results_average_velocity(m_index,n_index,mission_index)  = mean(v);
+                results_max_cl(m_index,n_index,mission_index)            = max(cl);
+                results_mean_weight(m_index,n_index,mission_index)       = mean(w);
+
             end
         
         end

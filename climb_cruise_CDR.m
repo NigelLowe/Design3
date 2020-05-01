@@ -123,6 +123,8 @@
         
         engine_characteristics_BSFC
        
+        fused(i) = BSFC(i)*Power(i)*time_res*3600; %kg, as time res is in hrs)
+        
         w(i+1) = w(i) - Power(i)*BSFC(i)*time_res*3600; %end of segement fuel
         
         d(i+1) = d(i) + v(i)*time_res*3600;
