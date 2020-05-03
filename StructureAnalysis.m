@@ -62,7 +62,7 @@ ct = cr * taper_r; % m - chord at root
 
 
 % equations of lift distributions
-xDelta = 100e-3;
+xDelta = 400e-3; % chosen as rib spacing
 fuselageWidth = 2;
 x = 0:xDelta:b/2;
 cy = cr - 2/b*(cr-ct)*x; % trapezoid. And local chord
@@ -164,9 +164,6 @@ aerofoilX      = FX_72_MS_150A(zeroIndex:end,1);
 aerofoilTop    = flip(FX_72_MS_150A(1:zeroIndex,2));
 aerofoilBottom = FX_72_MS_150A(zeroIndex:end,2);
 
-
-figure(1)
-plot(aerofoilX,aerofoilTop,'b', aerofoilX,aerofoilBottom,'b')
     
 
 % volume required
@@ -199,6 +196,15 @@ internalFuel = V_required - 2*volumeWing;
 internalFuelWeight = internalFuel*rho_fuel; 
 fprintf('Fuel Amount left (wings %.0f%% full): %.3f m^3\n', wingFuelFrac*100, internalFuel);
 
+ang = deg2rad(2);
+Xr = @(X,Y) X*cos(ang) + Y*sin(ang);
+Yr = @(X,Y) -X*sin(ang) + Y*cos(ang);
+
+figure(1)
+%plot(aerofoilX*cy(foldIndex),aerofoilTop*cy(foldIndex),'b', aerofoilX*cy(foldIndex),aerofoilBottom*cy(foldIndex),'b')
+plot(Xr(aerofoilX,aerofoilTop),Yr(aerofoilX,aerofoilTop),'b', Xr(aerofoilX,aerofoilBottom),Yr(aerofoilX,aerofoilBottom),'b') % rotated aerofoil
+grid minor
+title('aerofoil at fold')
 %% Material list
 % 1: AL 7075-T6 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7075T6
 Materials.AL7075.E = 71.7e9; % Pa 
@@ -267,7 +273,7 @@ Materials.TI64.tensileYield = 880e6; % Pa
 
 %% validation of wing equation
 N = 2.5; % load factor
-b = 22;
+
 % C2 Grumman 
 c2S = 65; % m2
 c2b = 24.56; % m
@@ -290,28 +296,42 @@ correctionFactor = 3000/totalCorr;
 % adjust for other flight conditions with differnt MTOW and load factor
 
 N = 2.5; % load factor
-W = N*tow_num; % (kg)
+W = N*22.5e3; % (kg)
 rho = 1.225; %*3.468/14.696; % factor for 35000ft
-V = sqrt(W*g/(0.5*rho*clmax*S)); % knots
+V = 320*0.514444; %sqrt(W*g/(0.5*rho*clmax*S)); % knots - VD from flight envelop for worst case
 
 Ltrap = 2*W/(b*(1+taper_r))*(1-2*x/b*(1-taper_r));
 Lellip = 4*W/(pi*b)*sqrt(1-(2*x/b).^2);
 Lavg = (Ltrap + Lellip)/2; % kg/m
 LPerPanel = Lavg*xDelta; % kg
 
+[~, frontIndex] = min(abs(frontSparLoc - aerofoilX)); % index closest to front spar location
+[~, rearIndex] = min(abs(rearSparLoc - aerofoilX)); % index closest to rear spar location
+[~, maxHIndex] = min(abs(0.371 - aerofoilX)); % index closest to max thinckness wing location
+h1 = (aerofoilTop(frontIndex)-aerofoilBottom(frontIndex)) * cy;
+h2 = (aerofoilTop(rearIndex)-aerofoilBottom(rearIndex)) * cy;
+h  = (aerofoilTop(maxHIndex)-aerofoilBottom(maxHIndex)) * cy;
+
 
 M0 = 120/340; % max flight at sea level
 tc_ratio = 0.15;
-wingWeightCalc = 0.5 * 0.453592 * 0.00428*(S*10.7639)^0.48*(AR*M0^0.43*(W*2.20462)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
-wingWeightCalc2 = 0.5 * 0.453592 * 0.00428*(S*10.7639)^0.48*(AR*M0^0.43*(W*2.20462)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
-wingWeightCalc = correctionFactor * (wingWeightCalc + 0.5 * 0.453592 * 0.03386*(W*2.20462*N)^0.2477*(S*10.7639)^1.244*(1-5.2*2/b)^(1.307));
+wingWeight = correctionFactor * 0.5 * 0.453592 * 0.00428*(S*10.7639)^0.48*(AR*M0^0.43*(W*2.20462)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (kg) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
+foldIncrease = correctionFactor * 0.5 * 0.453592 * 0.03386*(W*2.20462)^0.2477*(S*10.7639)^1.244*(1-5.2*2/b)^(1.307); % correction weight from NASA technical report
+%wingWeight = correctionFactor * (wingWeight1 + 0.9*foldIncrease); % Assume 10% of addition at fold joint
 
-wWPerSpan = wingWeightCalc/S * cy; % (kg/m) - wing weight per span
-wWPerSpan(foldIndex) = wWPerSpan(foldIndex) + 500; % extra weigth at fold location for everything there
+wWPerSpan = wingWeight/S * cy; % (kg/m) - wing weight per span
+foldDistribution = foldIncrease/S * cy(1:foldIndex);
+wWPerSpan(1:foldIndex) = wWPerSpan(1:foldIndex) + 0.7*foldDistribution; % extra structure only in inboard section
+wWPerSpan(foldIndex) = wWPerSpan(foldIndex) + 0.3*sum(foldDistribution); % extra weigth at fold location for everything there
 
+% Drag
+Cdo_pod = 0.00029473;
+payloadDrag = Cdo_pod * 0.5 * rho * V^2 * 0.505 / g; % kg - Drag on 1 payload. 0.505 is wetted pod area from dragEstimation.m
+Cdwing  = 0.020577;
+Dwing = Cdwing*0.5*rho*V^2*h / g; % kg/m - area as middle spar height *xDelta
 
 payloadLocation = [0.1 foldLoc]; % percent of wing % this number of payload on each wing
-payload = 0;%3500/2; % worst case is no payload because then greater net vertical force
+payload = 0; %3500/2; % worst case is no payload because then greater net vertical force
 payloadPerSpan = zeros(1,length(x));
 for i = 1:length(payloadLocation)
     payloadIndex = round(payloadLocation(i)*length(x));
@@ -319,19 +339,27 @@ for i = 1:length(payloadLocation)
     bound = -devP+payloadIndex:devP+payloadIndex;
     payloadPerSpan(bound) = payload/length(bound); % kg/m  
 %     payloadWeight(payloadIndex) = payload/length(payloadLocation); % kg/m  (point load) --------- should I size it for 2 payloads or one on outer edge? i.e. two half loads or 1 full load
+    
+    % Dwing(payloadIndex) = Dwing(payloadIndex) + payloadDrag; % commented
+    % out since not payload on outerwing in this calc yet
 end
 payloadY = 0.2; % m - distance from wing to payload
 
 
+% Wing Torsion - Heinz pg243
+Cm = 0.1; % moment at 1/4 chord
+CmAileron = 0.01;
+CmFlap = -0.03;
+Vflap = 82; % speed with flaps extended
+MwtBase = Cm*0.5*rho*V^2*cy.^2.*flip(x)*1.5; % wing torsion at VD with neutral aileron and flap
+MwtA = 0.75*MwtBase + CmAileron*0.5*rho*V^2*cy.^2*1.5; % wing torsion with aileron
+MwtF = MwtBase*(Vflap/V)^2 + CmFlap*0.5*rho*Vflap^2*cy.^2*1.5; % wing torsion with flap
 
 % Bird strike - assure impact with a 0.91kg birc shall not result in an
 % uncontrolled flight 
 mb = 0.91; % kg
-% Fb = mb*Vc^2/(2*0.25); % N - bird strike force (based on Kea bird size) 
-% Mb = Fb*(b/2); % Nm moment at root
-Cdo_pod = 0.000294730492141461;
-payloadDrag = Cdo_pod * 0.5 * rho * V^2 * S / g; % kg - Drag on 1 payload
-
+Fb = mb*V^2/(2*0.25); % N - bird strike force (based on Kea bird size) 
+Mb = Fb*(b/2); % Nm moment at root
 
 
 
@@ -366,14 +394,10 @@ fprintf('aircraft weight (half): %.0f kg\n\n', W/2);
 LPerSpanOrig = sum(q_mat.*cy/nYDelta);
 LPerSpan  = sum(q.*cy/nYDelta);
 LPerChord = sum(q'*xDelta);
-figure(6)
+figure(2)
 plot(LPerChord);
 
 
-[~, frontIndex] = min(abs(frontSparLoc - aerofoilX)); % index closest to front spar location
-[~, rearIndex] = min(abs(rearSparLoc - aerofoilX)); % index closest to rear spar location
-h1 = (aerofoilTop(frontIndex)-aerofoilBottom(frontIndex)) * cy;
-h2 = (aerofoilTop(rearIndex)-aerofoilBottom(rearIndex)) * cy;
 
 h1i = h1(1:foldIndex);
 h1o = h1(foldIndex+1:end);
@@ -495,33 +519,31 @@ for m = 1:length(t_cap_vec)
         A_beam2 = [A_beamEq(b_cap2i_arr,t_cap2i_arr,h2i) A_beamEq(b_cap2o_arr,t_cap2o_arr,h2o)];
         
 %         % if force distribution between spars besed only on stiffness
-%         K1 = 3*E*I1/(b/2)^3; % front spar stiffness
-%         K2 = 3*E*I2/(b/2)^3; % rear spar stiffness
-%         P1 = q .* K1./(K1+K2);
-%         P2 = q .* K2./(K1+K2);
-%         P1(end) = 0;  
-%         P2(end) = 0;
-        P1 = q .* (rearSparLoc-0.25)/(rearSparLoc-frontSparLoc); % kg/m - if distance determines force distribution
-        P2 = q .* (0.25-frontSparLoc)/(rearSparLoc-frontSparLoc);
+        K1 = 3*E*I1/(b/2)^3; % front spar stiffness
+        K2 = 3*E*I2/(b/2)^3; % rear spar stiffness
+        P1 = q .* K1./(K1+K2);
+        P2 = q .* K2./(K1+K2);
+        P1(end) = 0;  
+        P2(end) = 0;
+%         P1 = q .* (rearSparLoc-0.25)/(rearSparLoc-frontSparLoc); % kg/m - if distance determines force distribution
+%         P2 = q .* (0.25-frontSparLoc)/(rearSparLoc-frontSparLoc);
         
         
 % spanwise forces/moments
-        figure(2)
+        figure(3)
         plot(x,sum(q_mat.*cy/nYDelta), x,sum(selfWeightMat.*cy/nYDelta), x,sum(q_mat.*cy/nYDelta)-sum(selfWeightMat.*cy/nYDelta), x,sum(P1.*cy/nYDelta), x,sum(P2.*cy/nYDelta))
         ylabel('Force/span (kg/m)')
         xlabel('span location (m)')
         legend('Lift','Self Wing Weight','Net Vertical', 'Front','Rear')
-        [Sf1, Sf2]       = deal(zeros(1,length(x))); % kg - shear force
-        [M1, M2]         = deal(zeros(1,length(x))); % kgm - bending moment
-        [Ss1, Ss2]       = deal(zeros(1,length(x))); % kg/m^2 - shear stress
-        [theta1, theta2] = deal(zeros(1,length(x))); % rad - deflection angle
-        [w1, w2]         = deal(zeros(1,length(x))); % m - deflection
-
-        [SsF1,SsF2,SsM1,SsM2] = deal(zeros(1,length(x)));
+        [Sf1, Sf2, Sdrag] = deal(zeros(1,length(x))); % kg - shear force
+        [M1, M2, Mdrag]   = deal(zeros(1,length(x))); % kgm - bending moment (M1, M2 from lift/weight, Mdrag from drag force)
+        [Ss1, Ss2]        = deal(zeros(1,length(x))); % kg/m^2 - shear stress
+        [theta1, theta2]  = deal(zeros(1,length(x))); % rad - deflection angle
+        [w1, w2]          = deal(zeros(1,length(x))); % m - deflection
+        [SsF1,SsF2,SsM1,SsM2] = deal(zeros(1,length(x))); % kg/m^2 - shear stress
         
-        [S0, M0]       = deal(zeros(1,length(x))); % kg - shear force
+        [S0, M0]          = deal(zeros(1,length(x))); % kg - shear force/bending moment - of total wing
 
-                
         for i = length(x)-1:-1:1 % 0 stress and moment at wing tip
             Sf1(i) = Sf1(i+1) - 0.5*(sum(P1(:,i+1))+sum(P1(:,i)))*xDelta*(cy(i)/nYDelta); % kg
             Sf2(i) = Sf2(i+1) - 0.5*(sum(P2(:,i+1))+sum(P2(:,i)))*xDelta*(cy(i)/nYDelta); % kg
@@ -538,6 +560,9 @@ for m = 1:length(t_cap_vec)
             
             S0(i) = S0(i+1) - 0.5*(sum(q(:,i+1))+sum(q(:,i)))*xDelta*(cy(i)/nYDelta); % kg
             M0(i) = M0(i+1) - 0.5*(S0(i+1)+S0(i))*xDelta; % kgm
+            
+            Sdrag(i) = Sdrag(i+1) - 0.5*(Dwing(i+1)+Dwing(i))*xDelta; % kg
+            Mdrag(i) = Mdrag(i+1) - 0.5*(Sdrag(i+1)+Sdrag(i))*xDelta; % kgm
         end
         for j = 2:length(x) % 0 deflection at wing root
             if j > foldIndex
@@ -549,6 +574,9 @@ for m = 1:length(t_cap_vec)
             w2(j) = w2(j-1) + 0.5*(theta2(j)+theta2(j-1))*xDelta;
         end
 
+        % tension/compression in spar - method form Nicolai pg 550
+        Pcap = M1./h1; % kg % force in spar cap : +- tension in lower, compression in upper. Upper cap will be thicker
+        Areq = Pcap*g*1.5/ultimateTensile; % area required in lower cap 
         
         
 % chordwise forces and moments
@@ -556,7 +584,7 @@ for m = 1:length(t_cap_vec)
 
         
 %         if t_cap == t_cap2 && b_cap == b_cap2
-            figure(mIndex + 2)
+            figure(4) %mIndex + 3)
             subplot(2,2,1)
             %subplot(4,1,1)
             plot(x,Sf1, x,Sf2) %, 'DisplayName', beamUsed)
@@ -658,6 +686,13 @@ end
 
 %% Lug analysis
 
+%indicate center point of lug
+topLugLoc = 0.375*cy(foldIndex); % m - top lug location - max height position
+bLeftLugLoc  = 0.245*cy(foldIndex); % m - bottom left lug location
+bRightLugLoc = 0.505*cy(foldIndex); % m - bottom right lug location
+dBottom = bRightLugLoc - bLeftLugLoc; % m - distance between bottom lugs
+% take middle gap as 500mm
+
 q_inner = q(:,1:foldIndex); % N/m^2 - lift on inner wing
 q_outer = q(:,foldIndex:end); % N/m^2 - lift on outer wing
 
@@ -675,36 +710,255 @@ foldh2 = h2(foldIndex); % spar height rear
 F1 = foldM1/foldh1; % (kg) axial force front
 F2 = foldM2/foldh2; % (kg) axial force rear
 Lfold = q(:,foldIndex); % full lift distribution at fold
-L1 = sum(P1(:,foldIndex)*xDelta); % (kg/m) - lift force at fold front
-L2 = sum(P2(:,foldIndex)*xDelta); % (kg/m) - lift force at fold reat
+Lf1 = sum(P1(:,foldIndex)*xDelta); % (kg/m) - lift force at fold front
+Lf2 = sum(P2(:,foldIndex)*xDelta); % (kg/m) - lift force at fold reat
 
-% lift force transfered to spar and then to hinge
-% front lug calculations
-D1 = 50e-3; % m - hole diameter
-W1 = 125e-3; % m - lug width
-R1 = W1/2; % m - lug radius
-t1 = 50e-3; % m - lug thickness
-A1 = R1 - D1/2*(1-cosd(45));
-A2 = R1 - D1/2;
-A3 = A2;
-A4 = A1;
-Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
 
-fprintf('Front \nR/D = %.2f (range 0.7-4)\nD/t = %.1f (range 2-30)\nW/D = %.2f (range 1-5)\nAav/Abr = %.2f (range 0-1.4)\n',R1/D1,D1/t1,W1/D1,Aav1/(D1*t1));
+foldSf = S0(foldIndex);
+foldM = M0(foldIndex);
+foldh = h(foldIndex);
+F = foldM/foldh / 2; % assume hinges close to below the top hinge % divide by 2 since bottom lugs split moment force from lift
+Wouter = sum(selfWeight(foldIndex+1:end)*xDelta); % kg - weight of outer wing
 
-Kbr = 1.15;
-Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
-Ktru = 0.55; % Aav/Abr value much higher than graph values. Need to adjust --- though it does plateau at the end
 
+% from Drag -- added axial force in lug
+foldMdrag = Mdrag(foldIndex);
+foldSdrag = Sdrag(foldIndex);
+foldFdrag = foldMdrag/dBottom;
+F0 = F;
+F = F + foldFdrag;
+
+
+
+
+
+
+% Lug material
+lugDensity = Materials.AL7075.rho;
 Ftu = Materials.AL7075.ultimateTensile;
 
-P1s = Kbr*Ftu*D1*t1; % N - shear bearing stress
-P1te = Kt*Ftu*(W1-D1)*t1; % N - tension
-P1tr = Ktru*Ftu*D1*t1; % N - transverse load
+% lift force transfered to spar and then to hinge
+% bottom lug calculations
+L = 100e-3;
+gBolt = 1/64*0.0254; % m - lug spacing
+% 1 outboard - 4.12kg (M.S. = 0.12 | 0.12 | 5.2)
+% nLugs = 1;
+% D = 1*0.0254; % m - (3/4 inch) hole diameter -- max bolt diameter in Design 1 sources is 1 inch = 25.4 mm
+% W = 55e-3; % m - lug width
+% t = 115e-3; % m - lug thickness  ------ NOT HAPPENING
+% Kbr = 1.11;
+% Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
+% Ktru = 0.55; % Aav/Abr value much higher than graph values. Need to adjust --- though it does plateau at the end
 
-% full moment of particular spar at fold goes to bottom hinge
-% Full vertical force of outer wing goes to top lug
-MS1s = P1s/(F1*g*1.5*1.15) - 1;
-MS1te = P1te/(F1*g*1.5*1.15) - 1;
-MS1tr = P1tr/(-foldSf1*g*1.5*1.15) - 1;
-fprintf('Front Bottom Lug: shear = %.2f | tension = %.2f | transverse = %.2f\n',MS1s,MS1te,MS1tr)
+% 2 outboard - 4.11kg (M.S. = 0.17 | 0.36 | 5.49)
+% nLugs = 2; 
+% D = 1*0.0254; % m - hole diameter
+% W = 60e-3; % m - lug width
+% t = 60e-3; % m - lug thickness 
+% Kbr = 1.115;
+% Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
+% Ktru = 0.55;
+
+% 3 outboard - 3.88kg (M.S. = 0.32 | 0.21 | 7.11)
+% nLugs = 3; 
+% D = 1*0.0254; % m - hole diameter - 3.88kg (M.S. = 0.32 | 0.21 | 7.11) -- doesnt work with bolt bending
+% W = 50e-3; % m - lug width
+% t = 50e-3; % m - lug thickness 
+% D = 7/8*0.0254; % m - hole diameter - 3.47kg (M.S. = 0.15 | 0.12 | 6.1)
+% W = 45e-3; % m - lug width
+% t = 50e-3; % m - lug thickness 
+% Kbr = 1;
+% Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
+% Ktru = 0.55;
+
+% 4 outboard - 
+% nLugs = 4; 
+% D = 7/8*0.0254; % m - hole diameter -- 3.61kg (M.S. = 0.13 | 0.33 | 4.5 | 1.52)
+% W = 45e-3; % m - lug width
+% t = 40e-3; % m - lug thickness 
+% % D = 3/4*0.0254; % m - hole diameter -- 3.4kg (M.S. = 0.21 | 0.17 | 4.9 | 0.28)
+% % W = 35e-3; % m - lug width
+% % t = 50e-3; % m - lug thickness
+% Kbr = 0.85;
+% Kt = 0.98; % curve 2: 7075-T6 steel plate lug > 0.5in
+% Ktru = 0.55;
+
+% add in bottom hinges having a chord wise separation from the top lug
+
+
+% SET UP LOOP FOR NUMBER OF LUGS AND FOR BOLT DIAMETER. ALL IN BOLT BENDING
+% AND SHEAR CALCS
+
+% Kbr - D/t = 2
+RDratio = 0.6:0.2:4;
+Kbr_vec = [0.2 0.55 0.83 1.1 1.3 1.5 1.7 1.9 1.05 2.18 2.3 2.45 2.5 2.65 2.7 2.8 2.9 2.95];
+
+%Kt - curve 2
+WDratio = 1:0.5:4.5;
+Kt_vec = [1 0.99 0.97 0.94 0.92 0.9 0.83 0.68];
+Ktru = 0.55;
+
+
+
+% min weights for number of lugs - mass includes pin weight
+% 2 lugs - 2.23kg | D = 7/8"  | t = 27mm | W = 58mm
+% 3 lugs - 1.93kg | D = 9/16" | t = 19mm | W = 55mm
+% 4 lugs - 1.83kg | D = 9/16" | t = 18mm | W = 43mm
+
+nLugs = 4; % number of lugs on outboard section % can go higher to get lighter, but then pin is longer
+D_vec = {'9/16', '5/8', '3/4', '7/8', '1'}; % inch - bolt diameter
+BBM_vals = [3140 4320 7450 11850 17670];
+% D_vec = {'7/8', '1'}; % inch - bolt diameter
+% BBM_vals = [11850 17670]; % ---------------- need to check if this is fine for bolt bending since table for since shear. Should be since single shear concept used. Need to validate. Need to account for bottom being spaced away from top
+BBMmap = containers.Map(D_vec,BBM_vals);
+t_vec = (10:60)/1000; % m --- can you get materials by the millimeter or is it every 5 millimeters
+t = 50e-3;
+% W_vec = (20:60)/1000; % m
+% W = 50e-3; 
+
+dIndex = 1;
+
+for D_name = D_vec
+    D = str2num(D_name{1})*0.0254; % convert to m
+    tIndex = 1;
+    
+    for t = t_vec
+%     for W = W_vec
+        Wlug = 5e-3; 
+        [MS1s, MS1te, MS1tr, MSbb] = deal(0);
+        
+        while min([MS1s, MS1te, MS1tr, MSbb]) < 0.1 % loop through increasing W to get actual lowest weight for D,t combination 
+        
+            if Wlug > 0.5 % 
+                Wlug = Inf;
+                [MS1s, MS1te, MS1tr, MSbb,lugWeightF] = deal(Inf);
+                break;
+            end
+            Wlug = Wlug + 1e-3; % add 5 mm
+            
+            
+            
+            R = Wlug/2; % m - lug radius
+            
+            % find graph coefficient values 
+            [~, KbrIndex] = min(abs(R/D - RDratio)); % index closest to front spar location
+            [~, KtIndex] = min(abs(Wlug/D - WDratio)); % index closest to rear spar location
+            Kbr = Kbr_vec(KbrIndex);
+            Kt = Kt_vec(KtIndex);
+            Ktru = 0.55;
+
+            A1 = R - D/2*(1-cosd(45));
+            A2 = R - D/2;
+            A3 = A2;
+            A4 = A1;
+            Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
+
+            lugWeightF = lugDensity * ((nLugs+1)*0.51+nLugs)*t*(L*Wlug+pi/8*(Wlug^2-2*D^2)); % double shear lug - accounted for with thickness weight
+            lugWeightF = lugWeightF + lugDensity*pi*D^2*(t*(1.51*nLugs + 0.51) + 2*nLugs*gBolt) ; % add mass of pin needed
+    %         fprintf('Front \nR/D = %.2f (range 0.7-4)\nD/t = %.1f (range 2-30)\nW/D = %.2f (range 1-5)\nAav/Abr = %.2f (range 0-1.4)\n',R/D,D/t,W/D,Aav1/(D*t));
+    %         fprintf('--------------------------------\n')
+    %         fprintf('total front lug weight = %.2f kg\n',lugWeightF)
+
+            P1s = Kbr*Ftu*D*t; % N - shear bearing stress
+            P1te = Kt*Ftu*(Wlug-D)*t; % N - tension
+            P1tr = Ktru*Ftu*D*t; % N - transverse load3
+            bLugM = t/(2*(nLugs+1)) + 0.51*t/(2*nLugs) + gBolt;
+
+            BBM = BBMmap(D_name{1}) * 0.0254 * 4.45 / g; % get ultimate bending moment corresponding to this bolt diameter
+
+            % full moment of particular spar at fold goes to bottom hinge
+            % Full vertical force of outer wing goes to top lug
+            MS1s = P1s/(F/nLugs*g*1.5*1.15) - 1;
+            MS1te = P1te/(F/nLugs*g*1.5*1.15) - 1;
+            MS1tr = P1tr/(-foldSf/nLugs*g*1.5*1.15) - 1; % not sure if it would be taken by all lugs or just the outboard ones
+            MSbb = BBM/(F/(nLugs*(nLugs+1))*bLugM*1.5*1.15) - 1;
+    %         fprintf('shear = %.2f \ntension = %.2f \ntransverse = %.2f \nbolt bending = %.2f\n',MS1s,MS1te,MS1tr,MSbb)
+        end
+        
+        MSshear(dIndex,tIndex) = MS1s;
+        MStension(dIndex,tIndex) = MS1te;
+        MStransverse(dIndex,tIndex) = MS1tr;
+        MSbending(dIndex,tIndex) = MSbb;
+        weightLug(dIndex,tIndex) = lugWeightF;
+        WLightest(dIndex,tIndex) = Wlug*1000;
+        
+        fprintf('D: %3s in | t: %.0f mm| W: %.0f mm | m: %.2f kg | %.2f %.2f %.2f %.2f\n',D_name{1},t*1000,Wlug*1000,lugWeightF,MS1s,MS1te,MS1tr,MSbb)
+        
+        tIndex = tIndex + 1;
+        
+    end
+    dIndex = dIndex + 1;
+end
+
+%t_vec = W_vec;
+yLabelName = 'Margin Of Safety';
+xLabelName = 'thickness (mm)'; %'width (mm)'
+xlimits = [min(t_vec) max(t_vec)]*1000;
+
+figure(6)
+subplot(3,2,1)
+for j = 1:size(MSshear,1)
+    plot(t_vec*1000, MSshear(j,:),'linewidth',3)
+    legend_labels{j} = sprintf('D = %3s inch.', D_vec{j});
+    hold on;
+end
+plot(xlimits,[0.1 0.1],'k--')
+legend_labels{end+1} = 'M.S. = 0.1';
+legend(legend_labels)
+xlabel(xLabelName)
+ylabel(yLabelName)
+title('Shear')
+
+subplot(3,2,2)
+for j = 1:size(MStension,1)
+    plot(t_vec*1000, MStension(j,:),'linewidth',3)
+    hold on;
+end
+plot(xlimits,[0.1 0.1],'k--')
+xlabel(xLabelName)
+ylabel(yLabelName)
+title('Tension')
+
+subplot(3,2,3)
+for j = 1:size(MStransverse,1)
+    plot(t_vec*1000, MStransverse(j,:),'linewidth',3)
+    hold on;
+end
+plot(xlimits,[0.1 0.1],'k--')
+xlabel(xLabelName)
+ylabel(yLabelName)
+title('Transverse')
+
+subplot(3,2,4)
+for j = 1:size(MSbending,1)
+    plot(t_vec*1000, MSbending(j,:),'linewidth',3)
+    hold on;
+end
+plot(xlimits,[0.1 0.1],'k--')
+xlabel(xLabelName)
+ylabel(yLabelName)
+title('Bending')
+
+subplot(3,2,5)
+for j = 1:size(weightLug,1)
+    plot(t_vec*1000, weightLug(j,:),'linewidth',3)
+    hold on;
+end
+xlabel(xLabelName)
+ylabel('weight (kg)')
+title('Weight')
+
+subplot(3,2,6)
+for j = 1:size(WLightest,1)
+    plot(t_vec*1000, WLightest(j,:),'linewidth',3)
+    hold on;
+end
+xlabel(xLabelName)
+ylabel('Width (mm)')
+WnonInf = WLightest(~isinf(WLightest));
+ylim([min(min(WnonInf))*0.9 max(max(WnonInf))*1.1])
+title('Lug Width')
+
+% 2 lugs - 5.48kg | D = 1"   | t = 22mm | W = 158mm
+% 3 lugs - 3.17kg | D = 7/8" | t = 41mm | W = 49mm
+% 4 lugs - 3.05kg | D = 3/4" | t = 36mm | W = 42mm

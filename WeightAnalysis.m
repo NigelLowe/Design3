@@ -47,7 +47,8 @@ for mission = missionType
 
         close all;
         clc;
-        clearvars -except t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        %clearvars -except wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
@@ -98,9 +99,8 @@ for mission = missionType
         Ln = 1.2*39.3701; % in - nose landing gear
         Lm = 1.45*39.3701; % in - main landing gear weight 
         fuselageWeight = 11.03*Kinl^1.23*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.61; % USN - Nicolai
-        wingWeight = 0.00428*S_ft^0.48*(AR*M0^0.43*(MTOW*n)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(sweep))^1.54); % Subsonic Aircraft - Nicolai % multiply by 1.75 since the C-2 Grumman has a similar wingspan and folding wings with outer weight 3000lb.
-        wingWeight = 1.5967*(wingWeight + 0.03386*(MTOW*n)^0.2477*(S_ft)^1.244*(1-5.2*2/b)^(1.307));
-
+        wingWeight = 2 * wingWeight * 2.20462; % 2 since structures file uses half wing. 2.20462 to convert kg to lb
+        
         % https://www.tested.com/tech/568755-airplane-origami-how-folding-wings-work/     
         vertTailWeight = 0.0034*((MTOW*n)^0.813*Sht^0.584*(bht/trht)^0.033*(c_bar*Lt)^0.28)^0.915; % Nicolai - scale since have V tail
         horiTailWeight = 0.19*((MTOW*n)^0.363*Svt^1.089*M0^0.601*Lt^(-0.726)*(1+Sr/Svt)^0.217*ARvt^0.337*(1+taper_rvt)^0.363*(cosd(sweepvt)^(-0.484)))^1.014; % Nicolai - scale since have v tail
