@@ -176,8 +176,8 @@ rho_fuel = 804; % kg/m^3
 wingArea = sum((aerofoilTop(1:end-1)-aerofoilBottom(1:end-1)).*diff(aerofoilX));
 
 wingFuelFactorY = zeros(1,length(x));
-frontSparLoc = 0.1;
-rearSparLoc = 0.65;
+frontSparLoc = 0.15; % 0.1
+rearSparLoc = 0.65; 
 foldLoc = 5.2/(b/2);
 foldIndex = round(foldLoc*length(x));
 wingFuelFactorY(round(length(x)*frontSparLoc) : round(length(x)*rearSparLoc)) = 1;
@@ -281,11 +281,11 @@ c2AR = c2b^2/c2S;
 c2M0 = 343/661; % max sea level mach number
 c2W = 27216; % kg
 c2taper_r = 0.4;
-c2tc_ratio = 0.1;
+c2tc_ratio = 0.11;
 c2w_sweep = 0; % deg
 c2wingWeightCalc = 0.5* 0.00428*(c2S*10.7639)^0.48*(c2AR*c2M0^0.43*(c2W*2.20462)^0.84*c2taper_r^0.14)/((100*c2tc_ratio)^0.76*(cosd(c2w_sweep))^1.54); % (N) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
 
-corection = 0.03386*(c2W*2.20462*N)^0.2477*(c2S*10.7639)^1.244*(1-83/252)^(1.307);
+corection = 0.5 * 0.03386*(c2W*2.20462*N)^0.2477*(c2S*10.7639)^1.244*(1-83/252)^(1.307);
 totalCorr = c2wingWeightCalc + corection;
 correctionFactor = 3000/totalCorr;
 % c2wingWeightCalcRaymer = 0.5 * 0.0051*(c2W*N)^0.557*c2S^0.649*c2AR^0.5*c2tc_ratio^(-0.4)*(1+c2taper_r)^0.1*(cosd(c2w_sweep))^(-0.1)*(c2S*0.15)^0.1;
@@ -305,18 +305,14 @@ Lellip = 4*W/(pi*b)*sqrt(1-(2*x/b).^2);
 Lavg = (Ltrap + Lellip)/2; % kg/m
 LPerPanel = Lavg*xDelta; % kg
 
-[~, frontIndex] = min(abs(frontSparLoc - aerofoilX)); % index closest to front spar location
-[~, rearIndex] = min(abs(rearSparLoc - aerofoilX)); % index closest to rear spar location
+
 [~, maxHIndex] = min(abs(0.371 - aerofoilX)); % index closest to max thinckness wing location
-h1 = (aerofoilTop(frontIndex)-aerofoilBottom(frontIndex)) * cy;
-h2 = (aerofoilTop(rearIndex)-aerofoilBottom(rearIndex)) * cy;
 h  = (aerofoilTop(maxHIndex)-aerofoilBottom(maxHIndex)) * cy;
 
-
-M0 = 120/340; % max flight at sea level
+M0 = V/340; % max flight at sea level
 tc_ratio = 0.15;
-wingWeight = correctionFactor * 0.5 * 0.453592 * 0.00428*(S*10.7639)^0.48*(AR*M0^0.43*(W*2.20462)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (kg) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
-foldIncrease = correctionFactor * 0.5 * 0.453592 * 0.03386*(W*2.20462)^0.2477*(S*10.7639)^1.244*(1-5.2*2/b)^(1.307); % correction weight from NASA technical report
+wingWeight = correctionFactor * 0.453592 * 0.00428*(S*10.7639)^0.48*(AR*M0^0.43*(W*2.20462)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (kg) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
+foldIncrease = correctionFactor * 0.453592 * 0.03386*(W*2.20462)^0.2477*(S*10.7639)^1.244*(1-5.2*2/b)^(1.307); % correction weight from NASA technical report
 %wingWeight = correctionFactor * (wingWeight1 + 0.9*foldIncrease); % Assume 10% of addition at fold joint
 
 wWPerSpan = wingWeight/S * cy; % (kg/m) - wing weight per span
@@ -365,10 +361,10 @@ Mb = Fb*(b/2); % Nm moment at root
 
 
 fuelPerSpan = wingArea*cy.^2*rho_fuel .* wingFuelFactorX; % kg/m
-selfWeight = N*(wWPerSpan + payloadPerSpan + fuelPerSpan); % kg/m
+selfWeight = wWPerSpan + payloadPerSpan + fuelPerSpan; % kg/m
 
 
-nYDelta = 100;
+nYDelta = length(aerofoilX);
 for i = 1:length(x)
     c_mat(:,i) = linspace(0,cy(i),nYDelta);
 %     q_mat(:,i) = 2 * Lavg(i)/c(i) * (1 - c_mat(1:end-1,i)/c(i)); % kg/m^2 --- triangular chordwise distribution
@@ -382,7 +378,7 @@ end
 q_mat(:,end) = 0;
 
 %q = 0.5*c.*q; % to account for triangular chordwise lift distribution - combine total force at spanwise position into 1 value to use as N/m even though units would be N
-selfWeightMat = repmat(selfWeight./cy,size(q_mat,1),1); % kg/m^2
+selfWeightMat = repmat(N*selfWeight./cy,size(q_mat,1),1); % kg/m^2
 q = q_mat - selfWeightMat; % kg/m^2
 q_orig = Lavg; % kg/m
 q_mat_orig = q_mat; % kg/m^2
@@ -399,40 +395,67 @@ plot(LPerChord);
 
 
 
-h1i = h1(1:foldIndex);
-h1o = h1(foldIndex+1:end);
-h2i = h2(1:foldIndex);
-h2o = h2(foldIndex+1:end);
+% max thickness at 0.371
+nSpars = 3;
+sparName = ["Front","Middle","Rear"];
+sparPos = [frontSparLoc, 0.4, rearSparLoc];
+BMCarried = [0.424 0.417 0.159];
+%BMCarried = [0.34 0.32 0.24 0.1];
 
-% FX_72_MS_150A
-% b_cap1 = 165e-3; % m - front spar
-% t_cap1 = 10e-3; % m
-% b_cap2 = 125e-3; % m - rear spar % need deflection of both beams to be the same so there is no twisting from normal lift force
-% t_cap2 = 10e-3; % m
+% b_capiArray = [295, 295, 230, 165]*10^(-3);
+% t_capiArray = [ 15,  15,  15,  10]*10^(-3);
+% b_capoArray = [190, 180, 100,  80]*10^(-3);
+% t_capoArray = [ 10,  10,  10,  10]*10^(-3);
+% t_web = 10e-3; % web thickness inboard
 
-% inboard beam properties
-b_cap1i = 165e-3; %275e-3;
-t_cap1i = 10e-3;
-b_cap2i = 125e-3; %215e-3;
-t_cap2i = 10e-3;
+b_capiArray = [290, 210, 170]*10^(-3);
+b_capoArray = [ 90,  60,  55]*10^(-3);
+t_web = 5e-3; % web thickness inboard
+t_cap = 20e-3;
 
-% outboard beam properties - AL7475
-b_cap1o = 100e-3; %170e-3; %275e-3; 
-t_cap1o = 10e-3;
-b_cap2o = 80e-3; %130e-3; %215e-3;
-t_cap2o = 10e-3;
+% to get same deflection
+b_capiArray = [290, 270, 370]*10^(-3);
+%b_capoArray = [ 90,  50,  95]*10^(-3); 
 
-% all AL7075 - 233kg
-% TI inboard - 244kg
+maxbCap = 300e-3;
+t_capi_vec = (15:5:40)*10^(-3); % TI
+t_web_vec = (5:2.5:15)*10^(-3);
+% 
+% t_capi_vec = (10:10:60)*10^(-3); % AL
+% t_web_vec = (5:10:55)*10^(-3);
 
-b_cap_vec = b_cap2i; % m
-t_cap_vec = t_cap2i; % m
+for ii = 1:nSpars
+    [~, sparIndexAerofoil] = min(abs(sparPos(ii) - aerofoilX)); % index closest to front spar location
+    hArrays{ii} = (aerofoilTop(sparIndexAerofoil)-aerofoilBottom(sparIndexAerofoil)) * cy;
+    
+    [~, sparIndexReal] = min(abs(sparPos(ii)*cy(1) - c_mat(:,1)));
+    posIndecies(ii) = sparIndexReal;
+end
+
+liftSections = [1];
+for ii = 2:length(posIndecies)
+    liftSections(ii) = round(0.5*(posIndecies(ii-1) + posIndecies(ii)));
+end
+liftSections(end+1) = length(aerofoilX);
+
+for ii = 1:nSpars
+    hiArrays{ii} = hArrays{ii}(1:foldIndex);
+    hoArrays{ii} = hArrays{ii}(foldIndex+1:end);
+end
+
+
+% % all AL7075 - 233kg
+% % TI inboard - 244kg
+% 
+% %b_cap_vec = b_cap2i; % m
+% %t_cap_vec = t_cap2i; % m
 
 FS = 1.5; % STANAG Subpart C 303 - "F.O.S no lower than 1.5 for structures whose failure would lead to a hazardous or more serious failure condition"
 
 disp('Weight of half beam     | beam dimensions | MoS (front, rear)')
 materials = fieldnames(Materials);
-for mIndex = 7%:length(materials) % outboard (7 = TI64)
+%for mIndex = 7%:length(materials) % outboard (7 = TI64)
+    mIndex = 7;
     moIndex = 4; % inboard (4 = AL7475-T7651)
     
     % inboard beam properties
@@ -453,236 +476,367 @@ for mIndex = 7%:length(materials) % outboard (7 = TI64)
     ultimateTensileo = Materials.(beamUsedo).ultimateTensile; % Pa
     tensileYieldo = Materials.(beamUsedo).tensileYield; % Pa
     
+   
     
-    m = 1;
-    n = 1;
-    
-for m = 1:length(t_cap_vec)
-    t_cap2 = t_cap_vec(m);
-    
-%     t_cap1_arr = h1*t_cap1/h1(1);
-%     t_cap2_arr = h2*t_cap2/h2(1);
+%     m = 1;
+%     n = 1;
+% for m = 1:length(t_web_vec)
+%         t_web = t_web_vec(m);
+%     
+% %     for n = 1:length(b_cap_vec)
+% %         b_capiArray = b_capi_vec(n);
+% %         b_capoArray = b_capo_vec(n);
+%         
+%     for n = 1:length(t_capi_vec)
+%         t_capiArray = t_capi_vec(n)*ones(1,nSpars);
+        
+        t_capiArray = t_cap*ones(nSpars);
+        t_capoArray = t_capiArray;
 
-    t_cap1i_arr = h1i*t_cap1i/h1i(1);
-    t_cap2i_arr = h2i*t_cap2i/h2i(1);
-    t_cap1o_arr = h1o*t_cap1o/h1i(1);
-    t_cap2o_arr = h2o*t_cap2o/h2i(1);
-    
-    for n = 1:length(b_cap_vec)
-        b_cap2 = b_cap_vec(n);
         
-%         b_cap1_arr = h1*b_cap1/h1(1);
-%         b_cap2_arr = h2*b_cap2/h2(1);
-        b_cap1i_arr = h1i*b_cap1i/h1i(1);
-        b_cap2i_arr = h2i*b_cap2i/h2i(1);
-        b_cap1o_arr = h1o*b_cap1o/h1i(1);
-        b_cap2o_arr = h2o*b_cap2o/h2i(1);
-
-        beamWeightEq = @(rhoBeam,b_cap,t_cap,h) rhoBeam*t_cap.*(2.*b_cap+h-2.*t_cap); % kg/m
-%         beamWeight = beamWeightEq(b_cap1,t_cap1,h1) + beamWeightEq(b_cap2,t_cap2,h2); % for constant cap dimensions
-%         beamWeight = beamWeightEq(b_cap1_arr,t_cap1_arr,h1) + beamWeightEq(b_cap2_arr,t_cap2_arr,h2); % for changing cap dimensions
+%         b_capiArray = ones(1,nSpars)*10e-3;
+%         b_capoArray = ones(1,nSpars)*10e-3;
         
-        beamWeighti = beamWeightEq(rhoBeam,b_cap1i_arr,t_cap1i_arr,h1i) + beamWeightEq(rhoBeam,b_cap2i_arr,t_cap2i_arr,h2i);
-        beamWeighto = beamWeightEq(rhoBeamo,b_cap1o_arr,t_cap1o_arr,h1o) + beamWeightEq(rhoBeamo,b_cap2o_arr,t_cap2o_arr,h2o);
-        beamWeight = [beamWeighti beamWeighto];
-        
-        %{
-        %bending
-        https://ocw.mit.edu/courses/aeronautics-and-astronautics/16-01-unified-engineering-i-ii-iii-iv-fall-2005-spring-2006/systems-labs-06/spl10.pdf
-        
-        %force distribution: front - rear spar (for high aspect ratio wing)
-        https://pdfs.semanticscholar.org/e288/128ae125e0a6b8dd949d7e1afa1b97247bb0.pdf
-         
-        %beam stiffness in bending: k = 3EI/L^3
-        https://engineering.sjsu.edu/e10/wp-content/uploads/Structure_Stiffness_S13.pdf
-        %} 
-
-        % moment of inertia
-        I_cap = @(b_cap,t_cap,h) b_cap.*t_cap.^3/12 + b_cap.*t_cap.*(h./2-t_cap/2).^2;
-        I_middle = @(b_cap,t_cap,h) b_cap.*(h-2.*t_cap).^3/12;
-        I_combined = @(b_cap,t_cap,h) 2*I_cap(b_cap,t_cap,h) + I_middle(b_cap,t_cap,h);
-        A_beamEq = @(b_cap,t_cap,h) 2*b_cap.*t_cap + b_cap.*(h-2*t_cap);
-         
-%         I1 = I_combined(b_cap1,t_cap1,h1); % for constant cap dimensions
-%         I2 = I_combined(b_cap2,t_cap2,h2);
-%         A_beam1 = A_beamEq(b_cap1,t_cap1,h1);
-%         A_beam2 = A_beamEq(b_cap2,t_cap2,h2);
-
-%         I1 = I_combined(b_cap1_arr,t_cap1_arr,h1); % for changing cap dimensions
-%         I2 = I_combined(b_cap2_arr,t_cap2_arr,h2);
-%         A_beam1 = A_beamEq(b_cap1_arr,t_cap1_arr,h1);
-%         A_beam2 = A_beamEq(b_cap2_arr,t_cap2_arr,h2);
-
-        I1 = [I_combined(b_cap1i_arr,t_cap1i_arr,h1i) I_combined(b_cap1o_arr,t_cap1o_arr,h1o)]; % for changing cap dimensions
-        I2 = [I_combined(b_cap2i_arr,t_cap2i_arr,h2i) I_combined(b_cap2o_arr,t_cap2o_arr,h2o)];
-        A_beam1 = [A_beamEq(b_cap1i_arr,t_cap1i_arr,h1i) A_beamEq(b_cap1o_arr,t_cap1o_arr,h1o)];
-        A_beam2 = [A_beamEq(b_cap2i_arr,t_cap2i_arr,h2i) A_beamEq(b_cap2o_arr,t_cap2o_arr,h2o)];
-        
-%         % if force distribution between spars besed only on stiffness
-        K1 = 3*E*I1/(b/2)^3; % front spar stiffness
-        K2 = 3*E*I2/(b/2)^3; % rear spar stiffness
-        P1 = q .* K1./(K1+K2);
-        P2 = q .* K2./(K1+K2);
-        P1(end) = 0;  
-        P2(end) = 0;
-%         P1 = q .* (rearSparLoc-0.25)/(rearSparLoc-frontSparLoc); % kg/m - if distance determines force distribution
-%         P2 = q .* (0.25-frontSparLoc)/(rearSparLoc-frontSparLoc);
-        
-        
-% spanwise forces/moments
-        figure(3)
-        plot(x,sum(q_mat.*cy/nYDelta), x,sum(selfWeightMat.*cy/nYDelta), x,sum(q_mat.*cy/nYDelta)-sum(selfWeightMat.*cy/nYDelta), x,sum(P1.*cy/nYDelta), x,sum(P2.*cy/nYDelta))
-        ylabel('Force/span (kg/m)')
-        xlabel('span location (m)')
-        legend('Lift','Self Wing Weight','Net Vertical', 'Front','Rear')
-        [Sf1, Sf2, Sdrag] = deal(zeros(1,length(x))); % kg - shear force
-        [M1, M2, Mdrag]   = deal(zeros(1,length(x))); % kgm - bending moment (M1, M2 from lift/weight, Mdrag from drag force)
-        [Ss1, Ss2]        = deal(zeros(1,length(x))); % kg/m^2 - shear stress
-        [theta1, theta2]  = deal(zeros(1,length(x))); % rad - deflection angle
-        [w1, w2]          = deal(zeros(1,length(x))); % m - deflection
-        [SsF1,SsF2,SsM1,SsM2] = deal(zeros(1,length(x))); % kg/m^2 - shear stress
-        
-        [S0, M0]          = deal(zeros(1,length(x))); % kg - shear force/bending moment - of total wing
-
-        for i = length(x)-1:-1:1 % 0 stress and moment at wing tip
-            Sf1(i) = Sf1(i+1) - 0.5*(sum(P1(:,i+1))+sum(P1(:,i)))*xDelta*(cy(i)/nYDelta); % kg
-            Sf2(i) = Sf2(i+1) - 0.5*(sum(P2(:,i+1))+sum(P2(:,i)))*xDelta*(cy(i)/nYDelta); % kg
+        jj = 1;
+        do = true;
+        while do 
             
-            M1(i) = M1(i+1) - 0.5*(Sf1(i+1)+Sf1(i))*xDelta; % kgm
-            M2(i) = M2(i+1) - 0.5*(Sf2(i+1)+Sf2(i))*xDelta;
+%             if max([b_capiArray b_capoArray]) > maxbCap 
+%                 bMass = Inf;
+%                 for ii = 1:nSpars
+%                     if b_capiArray(ii) > maxbCap
+%                         b_capiArray(ii) = Inf;
+%                     end
+%                     if b_capoArray(ii) > maxbCap
+%                         b_capoArray(ii) = Inf;
+%                     end
+%                 end
+%                 break
+%             end
+%             
+%             if jj ~= 1
+%                 for ii = 1:nSpars
+%                     if MSArrays{ii} < 0.1 
+%                         b_capiArray(ii) = b_capiArray(ii) + 5e-3;
+%                     end
+%                     if MSArrayso{ii} < 0.1 
+%                         b_capoArray(ii) = b_capoArray(ii) + 5e-3;
+%                     end
+%                 end
+%             else
+%                 jj = jj + 1;
+%             end
+
+            % moment of inertia
+            I_cap = @(b_cap,t_cap,h) b_cap.*t_cap.^3/12 + b_cap.*t_cap.*(h./2-t_cap/2).^2;
+            I_middle = @(t_cap,t_web,h) t_web.*(h-2.*t_cap).^3/12;
+            I_combined = @(b_cap,t_cap,t_web,h) 1*I_cap(b_cap,t_cap,h) + I_middle(t_cap,t_web,h);
+            A_beamEq = @(b_cap,t_cap,t_web,h) 2*b_cap.*t_cap + t_web.*(h-2*t_cap);
             
-            SsF1(i) = Sf1(i)./A_beam1(i); % transverse stress
-            SsM1(i) = M1(i).*(h1(i)/2)./I1(i); % bending stress
-            SsF2(i) = Sf2(i)./A_beam2(i);
-            SsM2(i) = M2(i).*(h2(i)/2)./I2(i); 
-            Ss1(i)  = abs(SsF1(i) - SsM1(i)); % total shear stress
-            Ss2(i)  = abs(SsF2(i) - SsM2(i));
-            
-            S0(i) = S0(i+1) - 0.5*(sum(q(:,i+1))+sum(q(:,i)))*xDelta*(cy(i)/nYDelta); % kg
-            M0(i) = M0(i+1) - 0.5*(S0(i+1)+S0(i))*xDelta; % kgm
-            
-            Sdrag(i) = Sdrag(i+1) - 0.5*(Dwing(i+1)+Dwing(i))*xDelta; % kg
-            Mdrag(i) = Mdrag(i+1) - 0.5*(Sdrag(i+1)+Sdrag(i))*xDelta; % kgm
-        end
-        for j = 2:length(x) % 0 deflection at wing root
-            if j > foldIndex
-                E = Eo;
+            beamWeighti = zeros(1,foldIndex);
+            beamWeighto = zeros(1,length(cy)-foldIndex);
+            for ii = 1:nSpars
+                b_capi = b_capiArray(ii);
+                t_capi = t_capiArray(ii);
+                b_capo = b_capoArray(ii);
+                t_capo = t_capoArray(ii);
+                hi = hiArrays{ii};
+                ho = hoArrays{ii};
+                
+                IArrays{ii} = [I_combined(b_capi,t_capi,t_web,hi) I_combined(b_capo,t_capo,t_web,ho)];
+                Ainboard = A_beamEq(b_capi,t_capi,t_web,hi);
+                Aoutboard = A_beamEq(b_capo,t_capo,t_web,ho);
+                AArrays{ii} = [Ainboard Aoutboard];
+                
+
+                beamWeighti = beamWeighti + rhoBeam*Ainboard;
+                beamWeighto = beamWeighto + rhoBeamo*Aoutboard;
+                
+                %PArrays{ii} = q(liftSections(ii):liftSections(ii+1),:);
+                PArrays{ii} = q * 0.7*BMCarried(ii);
+
             end
-            theta1(j) = theta1(j-1) + 0.5*(M1(j)/E/I1(j) + M1(j-1)/E/I1(j-1))*xDelta; % non-dimensional 
-            theta2(j) = theta2(j-1) + 0.5*(M2(j)/E/I2(j) + M2(j-1)/E/I2(j-1))*xDelta;
-            w1(j) = w1(j-1) + 0.5*(theta1(j)+theta1(j-1))*xDelta; % m 
-            w2(j) = w2(j-1) + 0.5*(theta2(j)+theta2(j-1))*xDelta;
+            beamWeight = [beamWeighti beamWeighto];
+            bMass = sum(beamWeight*xDelta);
+            %{
+            %bending
+            https://ocw.mit.edu/courses/aeronautics-and-astronautics/16-01-unified-engineering-i-ii-iii-iv-fall-2005-spring-2006/systems-labs-06/spl10.pdf
+
+            %force distribution: front - rear spar (for high aspect ratio wing)
+            https://pdfs.semanticscholar.org/e288/128ae125e0a6b8dd949d7e1afa1b97247bb0.pdf
+
+            %beam stiffness in bending: k = 3EI/L^3
+            https://engineering.sjsu.edu/e10/wp-content/uploads/Structure_Stiffness_S13.pdf
+            
+            % gives distributions of bending moment on multiple spars - but
+            no reasoning why
+            https://www.slideshare.net/vigneshaero/index-adp-2
+            
+            https://aurora.auburn.edu/bitstream/handle/11200/49281/asic394.pdf?sequence=1&isAllowed=y
+            %} 
+
+    % spanwise forces/moments
+            figure(3)
+            plot(x,sum(q_mat.*cy/nYDelta)*g, x,sum(selfWeightMat.*cy/nYDelta)*g, x,sum(q_mat.*cy/nYDelta)*g-sum(selfWeightMat.*cy/nYDelta)*g)
+            hold on
+            for ii = 1:nSpars
+                plot(x,sum(PArrays{ii}.*cy/nYDelta)*g)
+                legend_labels(ii) = sparName(ii);
+                hold on
+            end
+            legend_name = ["Lift","Self Wing Weight","Net Vertical"];
+            ylabel('Force/span (N/m)')
+            xlabel('span location (m)')
+            legend([legend_name legend_labels])
+
+            [S0, M0, Sdrag, Mdrag] = deal(zeros(1,length(x))); % kg - shear force/bending moment - of total wing
+
+            for ii = 1:length(PArrays)
+                Ploop = PArrays{ii};
+                [Sloop, Mloop] = deal(zeros(1,length(x)));
+                for i = length(x)-1:-1:1 % 0 stress and moment at wing tip
+                    Sloop(i) = Sloop(i+1) - 0.5*(sum(Ploop(:,i+1))+sum(Ploop(:,i)))*xDelta*(cy(i)/nYDelta); % kg
+                    Mloop(i) = Mloop(i+1) - 0.5*(Sloop(i+1)+Sloop(i))*xDelta; % kgm 
+                end
+                SfArrays{ii} = Sloop;
+                MArrays{ii} = Mloop;
+            end
+            
+            for ii = 1:length(PArrays)
+                Sfloop = SfArrays{ii};
+                Mloop = MArrays{ii};
+                Aloop = AArrays{ii};
+                hloop = hArrays{ii};
+                Iloop = IArrays{ii};
+                [SsFloop, SsMloop, Ssloop, thetaloop, wloop] = deal(zeros(1,length(x)));
+                for i = length(x)-1:-1:1 % shear stress - transverse and bending
+                    
+                    SsFloop(i) = Sfloop(i)./Aloop(i); % transverse stress
+                    SsMloop(i) = Mloop(i).*(hloop(i)/2)./Iloop(i); % bending stress
+                    Ssloop(i)  = abs(SsFloop(i) - SsMloop(i)); % total shear stress
+                  
+                    if ii == 1
+                        S0(i) = S0(i+1) - 0.5*(sum(q(:,i+1))+sum(q(:,i)))*xDelta*(cy(i)/nYDelta); % kg
+                        M0(i) = M0(i+1) - 0.5*(S0(i+1)+S0(i))*xDelta; % kgm
+
+                        Sdrag(i) = Sdrag(i+1) - 0.5*(Dwing(i+1)+Dwing(i))*xDelta; % kg
+                        Mdrag(i) = Mdrag(i+1) - 0.5*(Sdrag(i+1)+Sdrag(i))*xDelta; % kgm
+                    end
+                end
+                SsArrays{ii} = Ssloop; % shear stress
+                
+                for j = 2:length(x) % 0 deflection at wing root
+                    if j > foldIndex
+                        E = Eo;
+                    end
+                    thetaloop(j) = thetaloop(j-1) + 0.5*(Mloop(j)/E/Iloop(j) + Mloop(j-1)/E/Iloop(j-1))*xDelta;
+                    wloop(j) = wloop(j-1) + 0.5*(thetaloop(j)+thetaloop(j-1))*xDelta; % m 
+                end
+                thetaArrays{ii} = thetaloop;
+                wArrays{ii} = wloop;
+            end
+
+
+%             if t_cap == t_cap2 && b_cap == b_cap2
+                figure(4) %mIndex + 3)
+                subplot(2,2,1)
+                %subplot(4,1,1)
+                %plot(x,Sf1, x,Sf2, x,Sf3) %, 'DisplayName', beamUsed)
+                for jj = 1:nSpars
+                    plot(x,SfArrays{jj}*g)
+                    hold on
+                end
+                ylabel('Shear Force (N)')
+                xlabel('span location (m)')
+                %title(['b_{cap} = ',num2str(b_cap*1000), ' mm, t_{cap} = ',num2str(t_cap*1000),' mm'])
+                ax = gca;
+                ax.TitleFontSizeMultiplier = 0.6;
+                %legend_labels{mIndex} = beamUsed;
+                %title(beamUsed);
+                xlim([0 b/2])
+                hold on
+
+                subplot(2,2,2)
+                %subplot(4,1,3)
+                %plot(x,Ss1*FS, x,Ss2*FS, x,Ss3*FS, [0 b/2],[shearStrength shearStrength]/g,'--g') 
+                for jj = 1:nSpars
+                    plot(x,SsArrays{jj}*FS*g)
+                    legend_labels(jj) = sparName(jj);
+                    hold on
+                end
+                plot([0 b/2],[shearStrength shearStrength],'--g')
+                ylabel('Shear Stress (N/m^2)')
+                xlabel('span location (m)')
+                %legend('front', 'mid', 'rear', 'max allowed with F.S', 'location','SE')
+                legend_labels(end+1) = 'max allowed with F.S';
+                legend(legend_labels)
+                xlim([0 b/2])
+                hold on
+
+                subplot(2,2,3)
+                %subplot(4,1,2)
+                %plot(x,M1, x,M2, x,M3)
+                for jj = 1:nSpars
+                    plot(x,MArrays{jj}*g)
+                    hold on
+                end
+                ylabel('Bending Moment (Nm)')
+                xlabel('span location (m)')
+                xlim([0 b/2])
+                hold on
+
+%                 subplot(2,2,4)
+%                 %plot(x,rad2deg(theta1), x,rad2deg(theta2), x,rad2deg(theta3))
+%                 for jj = 1:nSpars
+%                     plot(x,thetaArrays{jj})
+%                     hold on
+%                 end
+%                 ylabel('Angular Deflection (deg)')
+%                 xlabel('span location (m)')
+%                 xlim([0 b/2])
+%                 hold on
+
+                subplot(2,2,4)
+                %subplot(4,1,4) %if deflection of both beams is the same, then no twisting from lift distribution
+                %plot(x,w1, x,w2)
+                for jj = 1:nSpars
+                    plot(x,wArrays{jj})
+                    hold on
+                end
+                ylabel('Deflection (m)')
+                xlabel('span location (m)')
+                xlim([0 b/2])
+                hold on
+%             end
+
+            
+            % margin of safety
+            for kk = 1:nSpars
+                MSArrays{kk} = (shearStrength/g)/(max(SsArrays{kk}(1:foldIndex))*FS) - 1;
+                MSArrayso{kk} = (shearStrength/g)/(max(SsArrays{kk}(foldIndex+1:end))*FS) - 1;
+            end
+            
+            do = min([MSArrays{:} MSArrayso{:}]) < 0.1;
+            do = false;
         end
 
-        % tension/compression in spar - method form Nicolai pg 550
-        Pcap = M1./h1; % kg % force in spar cap : +- tension in lower, compression in upper. Upper cap will be thicker
-        Areq = Pcap*g*1.5/ultimateTensile; % area required in lower cap 
-        
-        
-% chordwise forces and moments
-        Mpayload = payloadY*payloadDrag * length(payloadLocation);
 
-        
-%         if t_cap == t_cap2 && b_cap == b_cap2
-            figure(4) %mIndex + 3)
-            subplot(2,2,1)
-            %subplot(4,1,1)
-            plot(x,Sf1, x,Sf2) %, 'DisplayName', beamUsed)
-            ylabel('Shear Force (N)')
-            xlabel('span location (m)')
-            %title(['b_{cap} = ',num2str(b_cap*1000), ' mm, t_{cap} = ',num2str(t_cap*1000),' mm'])
-            ax = gca;
-            ax.TitleFontSizeMultiplier = 0.6;
-            %legend_labels{mIndex} = beamUsed;
-            title(beamUsed);
-            xlim([0 b/2])
-            hold on
-            
-            subplot(2,2,2)
-            %subplot(4,1,3)
-            plot(x,Ss1*FS, x,Ss2*FS, [0 b/2],[shearStrength shearStrength]/g,'--g')  
-            ylabel('Shear Stress (N/m^2)')
-            xlabel('span location (m)')
-            legend('front', 'rear', 'max allowed with F.S', 'location','SE')
-            xlim([0 b/2])
-            hold on
-            
-            subplot(2,2,3)
-            %subplot(4,1,2)
-            plot(x,M1, x,M2)
-            ylabel('Bending Moment (Nm)')
-            xlabel('span location (m)')
-            xlim([0 b/2])
-            hold on
-            
-            subplot(2,2,4)
-            plot(x,rad2deg(theta1), x,rad2deg(theta2))
-            ylabel('Angular Deflection (deg)')
-            xlabel('span location (m)')
-            xlim([0 b/2])
-            hold on
-            
-%             subplot(2,2,4)
-%             %subplot(4,1,4) %if deflection of both beams is the same, then no twisting from lift distribution
-%             plot(x,w1, x,w2)
-%             ylabel('Deflection (m)')
-%             xlabel('span location (m)')
-%             xlim([0 b/2])
-%             hold on
-%         end
-        
-        % margin of safety
-        MS1(m,n) = (shearStrength/g)/(max(Ss1)*FS) - 1; % divide by 'g' since Sf in 'kg'
-        MS2(m,n) = (shearStrength/g)/(max(Ss2)*FS) - 1;
-        
-        maxS(m,n) = min(Sf1);
-        maxM(m,n) = max(M1);
-        maxW(m,n) = max(w1);
-        
-        fprintf('weight  : %.0f kg\n',sum(beamWeight*xDelta))
-        fprintf('inboard : %12s | %.0f, %.0f, %.0f, %.0f | %.4f, %.4f\n', beamUsed,b_cap1i*1000,t_cap1i*1000,b_cap2i*1000,t_cap2i*1000,MS1(m,n),MS2(m,n));
-        fprintf('outboard: %12s | %.0f, %.0f, %.0f, %.0f\n\n', beamUsedo,b_cap1o*1000,t_cap1o*1000,b_cap2o*1000,t_cap2o*1000);
+        fprintf('weight  : %.0f kg | ',bMass)
+        fprintf('M.S. |')
+            for ii = 1:nSpars
+                fprintf(' %.3f,',MSArrays{ii})
+            end
+            %fprintf(' | ')
+            fprintf('\n')
+
+        fprintf('inboard  : %12s |',beamUsed)
+        for ii = 1:nSpars
+            fprintf(' %.0f, %.0f,',b_capiArray(ii)*1000,t_capiArray(ii)*1000)
+        end
+        fprintf(' | ')
+        fprintf('\n')
+
+        fprintf('outboard : %12s |',beamUsedo)
+        for ii = 1:nSpars
+            fprintf(' %.0f, %.0f,',b_capoArray(ii)*1000,t_capoArray(ii)*1000)
+        end
+        fprintf('\n')
+%{
+        allWeight(m,n) = bMass;
+        allCapWidthi{m,n} = b_capiArray;
+        allCapWidtho{m,n} = b_capoArray;
+
     end
 end
+% end
+
+yLabelName = 'Weight (kg)';
+xLabelName = 'cap thickness (mm)'; %'width (mm)'
+xLimits = [min(t_capi_vec) max(t_capi_vec)]*1000;
+
+figure(4)
+for j = 1:size(allWeight,1)
+    plot(t_capi_vec*1000, allWeight(j,:),'linewidth',3)
+    legend_labels{j} = sprintf('t_{web} = %.1f mm', t_web_vec(j)*1000);
+    hold on;
 end
+xlim(xLimits)
+legend(legend_labels,'location','NW')
+xlabel(xLabelName)
+ylabel('Half Span Wing Spar Weight (kg)')
 
+figure(5)
+subplot(3,2,1)
+for j = 1:size(allCapWidthi,1)
+    plot(t_capi_vec*1000, cellfun(@(v)v(1),allCapWidthi(j,:))*1000, 'linewidth',3)
+    %plot(t_capi_vec*1000, cellfun(@(v)v(1),allCapWidthi(j,:))*1000, t_capi_vec*1000, cellfun(@(v)v(1),allCapWidtho(j,:))*1000,'.-', 'linewidth',3)
+    %legend_labels{2*j-1} = sprintf('inboard  t_{web} = %.1f mm', t_web_vec(j)*1000);
+    %legend_labels{2*j} = sprintf('outboard t_{web} = %.1f mm', t_web_vec(j)*1000);
+    hold on;
+end
+xlim(xLimits)
+% ylim([150 300]);
+legend(legend_labels)
+xlabel(xLabelName)
+ylabel('Cap Width (mm)')
+title('Front Inboard Spar ')
 
-%legend('show');
-%legend(legend_labels,'location','NW')
+subplot(3,2,2)
+for j = 1:size(allCapWidtho,1)
+    plot(t_capi_vec*1000, cellfun(@(v)v(1),allCapWidtho(j,:))*1000,'linewidth',3)
+    hold on;
+end
+xlim(xLimits)
+% ylim([40 120])
+xlabel(xLabelName)
+ylabel('Cap Width (mm)')
+title('Front Outboard Spar ')
 
-% for plotting variations in I beam dimensions
-% figure(5)
-% subplot(2,1,1)
-% for j = 1:size(maxS,1)
-%     plot(b_cap_vec*1000, MS1(j,:),'linewidth',3) %maxS(j,:),'linewidth',3)
-%     legend_labels{j} = sprintf('t_{cap} = %.0f mm.', t_cap_vec(j)*1000);
-%     hold on;
-% end
-% legend(legend_labels)
-% xlabel('b cap width (mm)');
-% %ylabel('min shear (N/m^2)');
-% ylabel('Margin Of Safety')
-% 
-% subplot(2,1,2)
-% for j = 1:size(maxM,1)
-%     plot(b_cap_vec*1000,MS2(j,:),'linewidth',3) %maxM(j,:),'linewidth',3)
-%     %legend_labels{j} = sprintf('t_{cap} = %.2f mm.', t_cap_vec(j));
-%     hold on;
-% end
-% legend(legend_labels)
-% xlabel('b cap width (mm)');
-% %ylabel('max moment (Nm)');
-% ylabel('Margin Of Safety')
+subplot(3,2,3)
+for j = 1:size(allCapWidthi,1)
+    plot(t_capi_vec*1000, cellfun(@(v)v(2),allCapWidthi(j,:))*1000,'linewidth',3)
+    hold on;
+end
+xlim(xLimits)
+% ylim([90 280])
+xlabel(xLabelName)
+ylabel('Cap Width (mm)')
+title('Middle Inboard Spar ')
 
-% subplot(2,2,3)
-% for j = 1:size(maxW,1)
-%     plot(b_cap_vec*1000,maxW(j,:),'linewidth',3)
-%     legend_labels{j} = sprintf('t_{cap} = %.2f m.', t_cap_vec(j));
-%     hold on;
-% end
-% legend(legend_labels)
-% xlabel('b cap width (mm)');
-% ylabel('max deflection (m)');
+subplot(3,2,4)
+for j = 1:size(allCapWidtho,1)
+    plot(t_capi_vec*1000, cellfun(@(v)v(2),allCapWidtho(j,:))*1000,'linewidth',3)
+    hold on;
+end
+xlim(xLimits)
+% ylim([10 80])
+xlabel(xLabelName)
+ylabel('Cap Width (mm)')
+title('Middle Outboard Spar ')
+
+subplot(3,2,5)
+for j = 1:size(allCapWidthi,1)
+    plot(t_capi_vec*1000, cellfun(@(v)v(3),allCapWidthi(j,:))*1000,'linewidth',3)
+    hold on;
+end
+xlim(xLimits)
+% ylim([100 220])
+xlabel(xLabelName)
+ylabel('Cap Width (mm)')
+title('Rear Inboard Spar ')
+
+subplot(3,2,6)
+for j = 1:size(allCapWidtho,1)
+    plot(t_capi_vec*1000, cellfun(@(v)v(3),allCapWidtho(j,:))*1000,'linewidth',3)
+    hold on;
+end
+xlim(xLimits)
+% ylim([30 70])
+xlabel(xLabelName)
+ylabel('Cap Width (mm)')
+title('Rear Outboard Spar ')
+
+%}
 
 %% Lug analysis
 
@@ -693,27 +847,8 @@ bRightLugLoc = 0.505*cy(foldIndex); % m - bottom right lug location
 dBottom = bRightLugLoc - bLeftLugLoc; % m - distance between bottom lugs
 % take middle gap as 500mm
 
-q_inner = q(:,1:foldIndex); % N/m^2 - lift on inner wing
-q_outer = q(:,foldIndex:end); % N/m^2 - lift on outer wing
-
 
 % need to find what moment is applied at the lugs that is trying to fold the wings up
-foldSf1 = Sf1(foldIndex); % shear force front
-foldSf2 = Sf2(foldIndex); % shear force rear
-foldM1 = M1(foldIndex); % moment front
-foldM2 = M2(foldIndex); % moment rear 
-foldSs1 = Ss1(foldIndex); % shear stress front
-foldSs2 = Ss2(foldIndex); % shear stress rear
-foldh1 = h1(foldIndex); % spar height front
-foldh2 = h2(foldIndex); % spar height rear
-
-F1 = foldM1/foldh1; % (kg) axial force front
-F2 = foldM2/foldh2; % (kg) axial force rear
-Lfold = q(:,foldIndex); % full lift distribution at fold
-Lf1 = sum(P1(:,foldIndex)*xDelta); % (kg/m) - lift force at fold front
-Lf2 = sum(P2(:,foldIndex)*xDelta); % (kg/m) - lift force at fold reat
-
-
 foldSf = S0(foldIndex);
 foldM = M0(foldIndex);
 foldh = h(foldIndex);
@@ -725,7 +860,6 @@ Wouter = sum(selfWeight(foldIndex+1:end)*xDelta); % kg - weight of outer wing
 foldMdrag = Mdrag(foldIndex);
 foldSdrag = Sdrag(foldIndex);
 foldFdrag = foldMdrag/dBottom;
-F0 = F;
 F = F + foldFdrag;
 
 
@@ -800,10 +934,11 @@ Ktru = 0.55;
 
 
 
-% min weights for number of lugs - mass includes pin weight
-% 2 lugs - 2.23kg | D = 7/8"  | t = 27mm | W = 58mm
-% 3 lugs - 1.93kg | D = 9/16" | t = 19mm | W = 55mm
-% 4 lugs - 1.83kg | D = 9/16" | t = 18mm | W = 43mm
+% min weights for number of lugs - mass includes pin weight - number of
+% lugs in each bottom 'hinge' - so would be 2 sets of this
+% 2 lugs - 2.09kg | D = 7/8"  | t = 30mm | W = 49mm
+% 3 lugs - 1.80kg | D = 9/16" | t = 20mm | W = 49mm
+% 4 lugs - 1.73kg | D = 9/16" | t = 17mm | W = 43mm
 
 nLugs = 4; % number of lugs on outboard section % can go higher to get lighter, but then pin is longer
 D_vec = {'9/16', '5/8', '3/4', '7/8', '1'}; % inch - bolt diameter
@@ -959,6 +1094,9 @@ WnonInf = WLightest(~isinf(WLightest));
 ylim([min(min(WnonInf))*0.9 max(max(WnonInf))*1.1])
 title('Lug Width')
 
-% 2 lugs - 5.48kg | D = 1"   | t = 22mm | W = 158mm
-% 3 lugs - 3.17kg | D = 7/8" | t = 41mm | W = 49mm
-% 4 lugs - 3.05kg | D = 3/4" | t = 36mm | W = 42mm
+
+
+% figure out how lugs attach to rotary actuator
+% figure out how much power rotary actuator needs to rotate wing
+%}
+
