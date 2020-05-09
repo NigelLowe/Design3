@@ -57,7 +57,6 @@ for mission = missionType
 
         % convert variables to imperial for equations
         S_ft = S*10.7639; % ft^2
-        wingFuelWeight = 2*wingFuelWeight; % to account for both wings
 
         L = 16; % m - fuselage length
         H = 2.5; % m - fueslage height
@@ -99,7 +98,7 @@ for mission = missionType
         Ln = 1.2*39.3701; % in - nose landing gear
         Lm = 1.45*39.3701; % in - main landing gear weight 
         fuselageWeight = 11.03*Kinl^1.23*(q*10^-2)^0.245*(MTOW*10^-3)^0.98*(L/H)^0.61; % USN - Nicolai
-        wingWeight = 2 * wingWeight * 2.20462; % 2 since structures file uses half wing. 2.20462 to convert kg to lb
+        wingWeight = wingWeight * 2.20462; % 2 since structures file uses half wing. 2.20462 to convert kg to lb
         
         % https://www.tested.com/tech/568755-airplane-origami-how-folding-wings-work/     
         vertTailWeight = 0.0034*((MTOW*n)^0.813*Sht^0.584*(bht/trht)^0.033*(c_bar*Lt)^0.28)^0.915; % Nicolai - scale since have V tail
@@ -125,7 +124,7 @@ for mission = missionType
         P2 = 10.49707; % lb/in^2 - max static pressure at engine compressor face
         Kgeo = 1; % duct shape factor (1 for round duct)
         Km = 1; % duct material factor (1 for M < 1)
-        engineWeight = 4189; % lb - TP-400
+        engineWeight = 4189*0.85; % lb - 85% of TP-400
         ne = 1; % number of engines
         np = 1; % number of propellers
         nb = 4; % number of blades per propeller
@@ -159,20 +158,20 @@ for mission = missionType
         bladeTR = 0.9;
         t2r = 0.12*(0.8+0.2*bladeTR)/(0.5+0.5*bladeTR); 
         
-        w_blade = 4*113.3*2.20462;
+        w_blade = 8*113.3*2.20462;
         %w_blade = Nrotor*0.00008377*shaftWallT*liftOffset*rotorRadius^3/(2*(separationFraction - tipClearance)*t2r^2);
         w_hub = Nrotor*(0.17153*shaftWallT*rotorRadius*Nblade + 0.000010534*(w_blade/Nrotor)*Vtip^2*t2r/rotorRadius);
         w_shaft = 2 * Nrotor*0.081304*shaftWallT*liftOffset*rotorRadius^2*2*separationFraction/t2r; % factor of 2 for support structure
         
-        prop(1)  = weightClass(               'Engine',    engineWeight,  0.19, L);
-        prop(2)  = weightClass(     'Propeller Blades',     100*2.20462, 0.015, L); % 374.1795 lb - using equation
-        prop(3)  = weightClass('Propeller Drive Shaft',       0*2.20462,     0, L);
+        prop(1) = weightClass(               'Engine',    engineWeight,  0.19, L);
+        prop(2) = weightClass(     'Propeller Blades',     100*2.20462, 0.015, L); % 374.1795 lb - using equation
+        prop(3) = weightClass('Propeller Drive Shaft',       0*2.20462,     0, L);
 
-        prop(4)  = weightClass(              'Duct',         totalDuct,   0.05, L);
-        prop(5)  = weightClass(     'Pneumatic (TP)',       pneumaticTP,    0.2, L);
-        prop(6)  = weightClass( 'Propeller Controls', propellerControls,    0.2, L);
-        prop(7)  = weightClass('Fuel System Bladder',      totalBladder, inFuel, L);
-        prop(8)  = weightClass(   'Fuel Dump System',         dumpDrain,   0.67, L);
+        prop(4) = weightClass(              'Duct',         totalDuct,   0.05, L);
+        prop(5) = weightClass(     'Pneumatic (TP)',       pneumaticTP,    0.2, L);
+        prop(6) = weightClass( 'Propeller Controls', propellerControls,    0.2, L);
+        prop(7) = weightClass('Fuel System Bladder',      totalBladder, inFuel, L);
+        prop(8) = weightClass(   'Fuel Dump System',         dumpDrain,   0.67, L);
         prop(9) = weightClass(      'Fuel CG Control',    cgFuelControl,   0.75, L);
 
         if strcmp(mission, 'Maritime')  %cg_var

@@ -239,12 +239,12 @@ Materials.AL7475.ultimateTensile = 565e6; % Pa
 Materials.AL7475.tensileYield = 490e6; % Pa
 
 % 5: AL 7475-T7651 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA7475T765
-Materials.AL7475T7651.E = 70.3e9; % Pa 
+Materials.AL7475T7651.E = 71.7e9; % Pa 
 Materials.AL7475T7651.rho = 2810; % (kg/m^3)
-Materials.AL7475T7651.shearStrength = 330e6; % Pa
+Materials.AL7475T7651.shearStrength = 310e6; % Pa
 Materials.AL7475T7651.shearModulus = 27e9; % Pa
-Materials.AL7475T7651.ultimateTensile = 565e6; % Pa
-Materials.AL7475T7651.tensileYield = 490e6; % Pa
+Materials.AL7475T7651.ultimateTensile = 531e6; % Pa
+Materials.AL7475T7651.tensileYield = 462e6; % Pa
 
 % 6: AL2024 - http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T4
 Materials.AL2024.E = 73.1e9; % Pa 
@@ -291,8 +291,8 @@ correctionFactor = 3000/totalCorr;
 % c2wingWeightCalcRaymer = 0.5 * 0.0051*(c2W*N)^0.557*c2S^0.649*c2AR^0.5*c2tc_ratio^(-0.4)*(1+c2taper_r)^0.1*(cosd(c2w_sweep))^(-0.1)*(c2S*0.15)^0.1;
 % https://ww2aircraft.net/forum/threads/sea-hurricane-and-the-prohibitive-weight-of-folding-wings.53172/
 
-%% force, moment calculation
 
+%% force, moment calculation
 % adjust for other flight conditions with differnt MTOW and load factor
 
 N = 2.5; % load factor
@@ -311,11 +311,12 @@ h  = (aerofoilTop(maxHIndex)-aerofoilBottom(maxHIndex)) * cy;
 
 M0 = V/340; % max flight at sea level
 tc_ratio = 0.15;
-wingWeight = correctionFactor * 0.453592 * 0.00428*(S*10.7639)^0.48*(AR*M0^0.43*(W*2.20462)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (kg) - Subsonic Aircraft - Nicolai - *0.5 since only looking at half the wing
+wingOnlyWeight = correctionFactor * 0.453592 * 0.00428*(S*10.7639)^0.48*(AR*M0^0.43*(W*2.20462)^0.84*taper_r^0.14)/((100*tc_ratio)^0.76*(cosd(w_sweep))^1.54); % (kg) - Subsonic Aircraft - Nicolai
 foldIncrease = correctionFactor * 0.453592 * 0.03386*(W*2.20462)^0.2477*(S*10.7639)^1.244*(1-5.2*2/b)^(1.307); % correction weight from NASA technical report
 %wingWeight = correctionFactor * (wingWeight1 + 0.9*foldIncrease); % Assume 10% of addition at fold joint
+wingWeight = wingOnlyWeight + foldIncrease;
 
-wWPerSpan = wingWeight/S * cy; % (kg/m) - wing weight per span
+wWPerSpan = wingOnlyWeight/S * cy; % (kg/m) - wing weight per span
 foldDistribution = foldIncrease/S * cy(1:foldIndex);
 wWPerSpan(1:foldIndex) = wWPerSpan(1:foldIndex) + 0.7*foldDistribution; % extra structure only in inboard section
 wWPerSpan(foldIndex) = wWPerSpan(foldIndex) + 0.3*sum(foldDistribution); % extra weigth at fold location for everything there
@@ -380,8 +381,17 @@ q_mat(:,end) = 0;
 %q = 0.5*c.*q; % to account for triangular chordwise lift distribution - combine total force at spanwise position into 1 value to use as N/m even though units would be N
 selfWeightMat = repmat(N*selfWeight./cy,size(q_mat,1),1); % kg/m^2
 q = q_mat - selfWeightMat; % kg/m^2
-q_orig = Lavg; % kg/m
-q_mat_orig = q_mat; % kg/m^2
+
+
+% extra lift from aileron
+% Laileron = 2*0.5*rho*V^2*b^2*(0.1)*6*cr/(4*b)*N/(N^2-1)*(0.064+0.051+0.043)/g; % last number from table VI of https://digital.library.unt.edu/ark:/67531/metadc54328/m2/1/high_res_d/19930081392.pdf for taper ratio 0.5, b'/b = 0.4t 
+% aileronPos = [7.15 10.875];
+% [~, aileroniIndex] = min(abs(aileronPos(1) - x)); % inboard side
+% [~, aileronoIndex] = min(abs(aileronPos(2) - x)); % outboard side
+% aileronArea = (aileronPos(2)-aileronPos(1))*0.2*cy(aileroniIndex:aileronoIndex)*xDelta;
+% LaileronPerSpan = Laileron / sum(aileronArea) * cy(aileroniIndex:aileronoIndex)
+
+
 %totalLift = sum(q_orig*xDelta); % assume triangular shaped distribution along chord (largest load at leading edge)
 totalLift = sum(sum(q_mat.*cy/nYDelta)*xDelta);
 fprintf('total Lift (half): %.0f kg\n', totalLift);
@@ -400,26 +410,44 @@ nSpars = 3;
 sparName = ["Front","Middle","Rear"];
 sparPos = [frontSparLoc, 0.4, rearSparLoc];
 BMCarried = [0.424 0.417 0.159];
-%BMCarried = [0.34 0.32 0.24 0.1];
 
-% b_capiArray = [295, 295, 230, 165]*10^(-3);
-% t_capiArray = [ 15,  15,  15,  10]*10^(-3);
-% b_capoArray = [190, 180, 100,  80]*10^(-3);
-% t_capoArray = [ 10,  10,  10,  10]*10^(-3);
-% t_web = 10e-3; % web thickness inboard
+% nSpars = 4;
+% sparName = ["Front","Middle 1","Middle 2","Rear"];
+% sparPos = [frontSparLoc, 0.25, 0.5, rearSparLoc];
+% BMCarried = [0.33 0.32 0.23 0.12];
 
-b_capiArray = [290, 210, 170]*10^(-3);
-b_capoArray = [ 90,  60,  55]*10^(-3);
+% nSpars = 2;
+% sparName = ["Front","Rear"];
+% sparPos = [frontSparLoc, rearSparLoc];
+% BMCarried = [0.55 0.45];
+
+
+
+% (inboard 7 = TI64, outboard 1 = AL7075 - m = 522kg)
+% b_capiArray = [260, 185, 150]*10^(-3);
+% b_capoArray = [130,  90,  80]*10^(-3);
+% t_web = 5e-3; % web thickness inboard
+% t_cap = 10e-3;
+
+% (inboard 1 = AL7075, outboard 1 = AL7075 - m = 547kg)
+b_capiArray = [240, 175, 145]*10^(-3);
+b_capoArray = [ 75,  55,  45]*10^(-3);
 t_web = 5e-3; % web thickness inboard
-t_cap = 20e-3;
+t_cap = 20e-3; 
 
-% to get same deflection
-b_capiArray = [290, 270, 370]*10^(-3);
-%b_capoArray = [ 90,  50,  95]*10^(-3); 
+
+b_capiFront = b_capiArray(1);
+b_capoFront = b_capoArray(1);
+t_webUsed = t_web;
+t_capUsed = t_cap;
 
 maxbCap = 300e-3;
-t_capi_vec = (15:5:40)*10^(-3); % TI
+t_capi_vec = (5:5:25)*10^(-3); % TI
 t_web_vec = (5:2.5:15)*10^(-3);
+
+t_capi_vec = t_cap;
+t_web_vec = t_web;
+
 % 
 % t_capi_vec = (10:10:60)*10^(-3); % AL
 % t_web_vec = (5:10:55)*10^(-3);
@@ -443,20 +471,17 @@ for ii = 1:nSpars
     hoArrays{ii} = hArrays{ii}(foldIndex+1:end);
 end
 
-
-% % all AL7075 - 233kg
-% % TI inboard - 244kg
-% 
-% %b_cap_vec = b_cap2i; % m
-% %t_cap_vec = t_cap2i; % m
+if ~exist('plotOtherGraphs','var')
 
 FS = 1.5; % STANAG Subpart C 303 - "F.O.S no lower than 1.5 for structures whose failure would lead to a hazardous or more serious failure condition"
 
 disp('Weight of half beam     | beam dimensions | MoS (front, rear)')
 materials = fieldnames(Materials);
-%for mIndex = 7%:length(materials) % outboard (7 = TI64)
-    mIndex = 7;
-    moIndex = 4; % inboard (4 = AL7475-T7651)
+%for mIndex = 7%:length(materials) 
+% (inboard 7 = TI64, outboard 1 = AL7075 - m = 522kg: cap 10, web 5, inboard 260, 185, 150, outboard 130, 90, 80)
+% (inboard 1 = AL7075, outboard 1 = AL7075 - m = 547kg: cap 20, web 5, inboard 240, 175, 145, outboard 75, 55, 45)
+    mIndex = 1; % inboard
+    moIndex = 1; % outboard
     
     % inboard beam properties
     beamUsed = materials{mIndex};
@@ -476,23 +501,18 @@ materials = fieldnames(Materials);
     ultimateTensileo = Materials.(beamUsedo).ultimateTensile; % Pa
     tensileYieldo = Materials.(beamUsedo).tensileYield; % Pa
     
+
    
-    
+%t_cap = 1000;
+b_cap = 1000;
 %     m = 1;
 %     n = 1;
-% for m = 1:length(t_web_vec)
-%         t_web = t_web_vec(m);
-%     
-% %     for n = 1:length(b_cap_vec)
-% %         b_capiArray = b_capi_vec(n);
-% %         b_capoArray = b_capo_vec(n);
-%         
-%     for n = 1:length(t_capi_vec)
-%         t_capiArray = t_capi_vec(n)*ones(1,nSpars);
-        
-        t_capiArray = t_cap*ones(nSpars);
-        t_capoArray = t_capiArray;
+for m = 1:length(t_web_vec)
+        t_web = t_web_vec(m);
 
+    for n = 1:length(t_capi_vec)      
+        t_capiArray = t_capi_vec(n)*ones(1,nSpars);
+        t_capoArray = t_capiArray;
         
 %         b_capiArray = ones(1,nSpars)*10e-3;
 %         b_capoArray = ones(1,nSpars)*10e-3;
@@ -501,36 +521,36 @@ materials = fieldnames(Materials);
         do = true;
         while do 
             
-%             if max([b_capiArray b_capoArray]) > maxbCap 
-%                 bMass = Inf;
-%                 for ii = 1:nSpars
-%                     if b_capiArray(ii) > maxbCap
-%                         b_capiArray(ii) = Inf;
-%                     end
-%                     if b_capoArray(ii) > maxbCap
-%                         b_capoArray(ii) = Inf;
-%                     end
-%                 end
-%                 break
-%             end
-%             
-%             if jj ~= 1
-%                 for ii = 1:nSpars
-%                     if MSArrays{ii} < 0.1 
-%                         b_capiArray(ii) = b_capiArray(ii) + 5e-3;
-%                     end
-%                     if MSArrayso{ii} < 0.1 
-%                         b_capoArray(ii) = b_capoArray(ii) + 5e-3;
-%                     end
-%                 end
-%             else
-%                 jj = jj + 1;
-%             end
-
+            if max([b_capiArray b_capoArray]) > maxbCap 
+                bMass = Inf;
+                for ii = 1:nSpars
+                    if b_capiArray(ii) > maxbCap
+                        b_capiArray(ii) = Inf;
+                    end
+                    if b_capoArray(ii) > maxbCap
+                        b_capoArray(ii) = Inf;
+                    end
+                end
+                break
+            end
+            
+            if jj ~= 1
+                for ii = 1:nSpars
+                    if MSArrays{ii} < 0.1 
+                        b_capiArray(ii) = b_capiArray(ii) + 5e-3;
+                    end
+                    if MSArrayso{ii} < 0.1 
+                        b_capoArray(ii) = b_capoArray(ii) + 5e-3;
+                    end
+                end
+            else
+                jj = jj + 1;
+            end
+            
             % moment of inertia
             I_cap = @(b_cap,t_cap,h) b_cap.*t_cap.^3/12 + b_cap.*t_cap.*(h./2-t_cap/2).^2;
             I_middle = @(t_cap,t_web,h) t_web.*(h-2.*t_cap).^3/12;
-            I_combined = @(b_cap,t_cap,t_web,h) 1*I_cap(b_cap,t_cap,h) + I_middle(t_cap,t_web,h);
+            I_combined = @(b_cap,t_cap,t_web,h) 2*I_cap(b_cap,t_cap,h) + I_middle(t_cap,t_web,h);
             A_beamEq = @(b_cap,t_cap,t_web,h) 2*b_cap.*t_cap + t_web.*(h-2*t_cap);
             
             beamWeighti = zeros(1,foldIndex);
@@ -543,6 +563,8 @@ materials = fieldnames(Materials);
                 hi = hiArrays{ii};
                 ho = hoArrays{ii};
                 
+%                 b_capi = b_capi*hi./hi(1); --- to taper width as well
+%                 b_capo = b_capo*ho./ho(1);
                 IArrays{ii} = [I_combined(b_capi,t_capi,t_web,hi) I_combined(b_capo,t_capo,t_web,ho)];
                 Ainboard = A_beamEq(b_capi,t_capi,t_web,hi);
                 Aoutboard = A_beamEq(b_capo,t_capo,t_web,ho);
@@ -576,19 +598,6 @@ materials = fieldnames(Materials);
             %} 
 
     % spanwise forces/moments
-            figure(3)
-            plot(x,sum(q_mat.*cy/nYDelta)*g, x,sum(selfWeightMat.*cy/nYDelta)*g, x,sum(q_mat.*cy/nYDelta)*g-sum(selfWeightMat.*cy/nYDelta)*g)
-            hold on
-            for ii = 1:nSpars
-                plot(x,sum(PArrays{ii}.*cy/nYDelta)*g)
-                legend_labels(ii) = sparName(ii);
-                hold on
-            end
-            legend_name = ["Lift","Self Wing Weight","Net Vertical"];
-            ylabel('Force/span (N/m)')
-            xlabel('span location (m)')
-            legend([legend_name legend_labels])
-
             [S0, M0, Sdrag, Mdrag] = deal(zeros(1,length(x))); % kg - shear force/bending moment - of total wing
 
             for ii = 1:length(PArrays)
@@ -613,7 +622,7 @@ materials = fieldnames(Materials);
                     
                     SsFloop(i) = Sfloop(i)./Aloop(i); % transverse stress
                     SsMloop(i) = Mloop(i).*(hloop(i)/2)./Iloop(i); % bending stress
-                    Ssloop(i)  = abs(SsFloop(i) - SsMloop(i)); % total shear stress
+                    Ssloop(i)  = SsFloop(i) + SsMloop(i); % total shear stress
                   
                     if ii == 1
                         S0(i) = S0(i+1) - 0.5*(sum(q(:,i+1))+sum(q(:,i)))*xDelta*(cy(i)/nYDelta); % kg
@@ -636,12 +645,34 @@ materials = fieldnames(Materials);
                 wArrays{ii} = wloop;
             end
 
+            
+            % margin of safety
+            for kk = 1:nSpars
+                MSArrays{kk} = (shearStrength/g)/(max(SsArrays{kk}(1:foldIndex))*FS) - 1;
+                MSArrayso{kk} = (shearStrengtho/g)/(max(SsArrays{kk}(foldIndex+1:end))*FS) - 1;
+            end
+            
+            do = min([MSArrays{:} MSArrayso{:}]) < 0.1;
+%             do = false;
+        end
 
-%             if t_cap == t_cap2 && b_cap == b_cap2
+%             if t_cap == t_capiArray(1) && b_cap == b_capiArray(1)
+                figure(3)
+                plot(x,sum(q_mat.*cy/nYDelta)*g, x,sum(selfWeightMat.*cy/nYDelta)*g, x,sum(q_mat.*cy/nYDelta)*g-sum(selfWeightMat.*cy/nYDelta)*g)
+                hold on
+                for ii = 1:nSpars
+                    plot(x,sum(PArrays{ii}.*cy/nYDelta)*g)
+                    legend_labels(ii) = sparName(ii);
+                    hold on
+                end
+                legend_name = ["Lift","Self Wing Weight","Net Vertical"];
+                ylabel('Force/span (N/m)')
+                xlabel('span location (m)')
+                legend([legend_name legend_labels])
+
                 figure(4) %mIndex + 3)
                 subplot(2,2,1)
                 %subplot(4,1,1)
-                %plot(x,Sf1, x,Sf2, x,Sf3) %, 'DisplayName', beamUsed)
                 for jj = 1:nSpars
                     plot(x,SfArrays{jj}*g)
                     hold on
@@ -656,15 +687,14 @@ materials = fieldnames(Materials);
                 xlim([0 b/2])
                 hold on
 
-                subplot(2,2,2)
+                subplot(2,2,3)
                 %subplot(4,1,3)
-                %plot(x,Ss1*FS, x,Ss2*FS, x,Ss3*FS, [0 b/2],[shearStrength shearStrength]/g,'--g') 
                 for jj = 1:nSpars
                     plot(x,SsArrays{jj}*FS*g)
                     legend_labels(jj) = sparName(jj);
                     hold on
                 end
-                plot([0 b/2],[shearStrength shearStrength],'--g')
+                plot([0 x(foldIndex) x(foldIndex) b/2],[shearStrength shearStrength shearStrengtho shearStrengtho],'--g')
                 ylabel('Shear Stress (N/m^2)')
                 xlabel('span location (m)')
                 %legend('front', 'mid', 'rear', 'max allowed with F.S', 'location','SE')
@@ -673,9 +703,8 @@ materials = fieldnames(Materials);
                 xlim([0 b/2])
                 hold on
 
-                subplot(2,2,3)
+                subplot(2,2,2)
                 %subplot(4,1,2)
-                %plot(x,M1, x,M2, x,M3)
                 for jj = 1:nSpars
                     plot(x,MArrays{jj}*g)
                     hold on
@@ -686,7 +715,6 @@ materials = fieldnames(Materials);
                 hold on
 
 %                 subplot(2,2,4)
-%                 %plot(x,rad2deg(theta1), x,rad2deg(theta2), x,rad2deg(theta3))
 %                 for jj = 1:nSpars
 %                     plot(x,thetaArrays{jj})
 %                     hold on
@@ -698,7 +726,6 @@ materials = fieldnames(Materials);
 
                 subplot(2,2,4)
                 %subplot(4,1,4) %if deflection of both beams is the same, then no twisting from lift distribution
-                %plot(x,w1, x,w2)
                 for jj = 1:nSpars
                     plot(x,wArrays{jj})
                     hold on
@@ -709,40 +736,35 @@ materials = fieldnames(Materials);
                 hold on
 %             end
 
-            
-            % margin of safety
-            for kk = 1:nSpars
-                MSArrays{kk} = (shearStrength/g)/(max(SsArrays{kk}(1:foldIndex))*FS) - 1;
-                MSArrayso{kk} = (shearStrength/g)/(max(SsArrays{kk}(foldIndex+1:end))*FS) - 1;
-            end
-            
-            do = min([MSArrays{:} MSArrayso{:}]) < 0.1;
-            do = false;
-        end
 
-
-        fprintf('weight  : %.0f kg | ',bMass)
+        fprintf('weight  : %.0f kg | cap: %.0f, web: %.0f ',bMass,t_capiArray(1)*1000,t_web*1000)
         fprintf('M.S. |')
             for ii = 1:nSpars
                 fprintf(' %.3f,',MSArrays{ii})
             end
-            %fprintf(' | ')
-            fprintf('\n')
+            fprintf(' | ')
+%             fprintf('\n')
+        fprintf('M.S. |')
+            for ii = 1:nSpars
+                fprintf(' %.3f,',MSArrayso{ii})
+            end
+            fprintf(' | ')
+%             fprintf('\n')
 
-        fprintf('inboard  : %12s |',beamUsed)
+        fprintf('inboard  : %12s | t_cap : %.0f, t_web : %.1f |',beamUsed,t_capiArray(1)*1000,t_web*1000)
         for ii = 1:nSpars
-            fprintf(' %.0f, %.0f,',b_capiArray(ii)*1000,t_capiArray(ii)*1000)
+            fprintf(' %.0f',b_capiArray(ii)*1000)
         end
         fprintf(' | ')
-        fprintf('\n')
+%         fprintf('\n')
 
         fprintf('outboard : %12s |',beamUsedo)
         for ii = 1:nSpars
-            fprintf(' %.0f, %.0f,',b_capoArray(ii)*1000,t_capoArray(ii)*1000)
+            fprintf(' %.0f, %.0f,',b_capoArray(ii)*1000)
         end
         fprintf('\n')
-%{
-        allWeight(m,n) = bMass;
+
+        allSparWeight(m,n) = bMass;
         allCapWidthi{m,n} = b_capiArray;
         allCapWidtho{m,n} = b_capoArray;
 
@@ -754,18 +776,23 @@ yLabelName = 'Weight (kg)';
 xLabelName = 'cap thickness (mm)'; %'width (mm)'
 xLimits = [min(t_capi_vec) max(t_capi_vec)]*1000;
 
-figure(4)
-for j = 1:size(allWeight,1)
-    plot(t_capi_vec*1000, allWeight(j,:),'linewidth',3)
-    legend_labels{j} = sprintf('t_{web} = %.1f mm', t_web_vec(j)*1000);
+figure(5)
+for j = 1:size(allSparWeight,1)
+    plot(t_capi_vec*1000, allSparWeight(j,:),'linewidth',3)
+    legend_labels2{j} = sprintf('t_{web} = %.1f mm', t_web_vec(j)*1000);
     hold on;
 end
-xlim(xLimits)
-legend(legend_labels,'location','NW')
+try
+    xlim(xLimits)
+catch 
+    xLimits = [min(t_capi_vec) max(t_capi_vec)+1]*1000;
+    xlim(xLimits)
+end
+legend(legend_labels2,'location','NW')
 xlabel(xLabelName)
 ylabel('Half Span Wing Spar Weight (kg)')
 
-figure(5)
+figure(6)
 subplot(3,2,1)
 for j = 1:size(allCapWidthi,1)
     plot(t_capi_vec*1000, cellfun(@(v)v(1),allCapWidthi(j,:))*1000, 'linewidth',3)
@@ -775,8 +802,8 @@ for j = 1:size(allCapWidthi,1)
     hold on;
 end
 xlim(xLimits)
-% ylim([150 300]);
-legend(legend_labels)
+ylim([100 260]);
+legend(legend_labels2)
 xlabel(xLabelName)
 ylabel('Cap Width (mm)')
 title('Front Inboard Spar ')
@@ -787,7 +814,7 @@ for j = 1:size(allCapWidtho,1)
     hold on;
 end
 xlim(xLimits)
-% ylim([40 120])
+ylim([20 140])
 xlabel(xLabelName)
 ylabel('Cap Width (mm)')
 title('Front Outboard Spar ')
@@ -798,7 +825,7 @@ for j = 1:size(allCapWidthi,1)
     hold on;
 end
 xlim(xLimits)
-% ylim([90 280])
+ylim([60 300])
 xlabel(xLabelName)
 ylabel('Cap Width (mm)')
 title('Middle Inboard Spar ')
@@ -809,7 +836,7 @@ for j = 1:size(allCapWidtho,1)
     hold on;
 end
 xlim(xLimits)
-% ylim([10 80])
+ylim([0 90])
 xlabel(xLabelName)
 ylabel('Cap Width (mm)')
 title('Middle Outboard Spar ')
@@ -820,7 +847,7 @@ for j = 1:size(allCapWidthi,1)
     hold on;
 end
 xlim(xLimits)
-% ylim([100 220])
+ylim([60 300])
 xlabel(xLabelName)
 ylabel('Cap Width (mm)')
 title('Rear Inboard Spar ')
@@ -831,12 +858,12 @@ for j = 1:size(allCapWidtho,1)
     hold on;
 end
 xlim(xLimits)
-% ylim([30 70])
+ylim([20 80])
 xlabel(xLabelName)
 ylabel('Cap Width (mm)')
 title('Rear Outboard Spar ')
 
-%}
+
 
 %% Lug analysis
 
@@ -852,7 +879,8 @@ dBottom = bRightLugLoc - bLeftLugLoc; % m - distance between bottom lugs
 foldSf = S0(foldIndex);
 foldM = M0(foldIndex);
 foldh = h(foldIndex);
-F = foldM/foldh / 2; % assume hinges close to below the top hinge % divide by 2 since bottom lugs split moment force from lift
+Fspanwise = foldM/foldh / 2; %kg % assume hinges close to below the top hinge % divide by 2 since bottom lugs split moment force from lift
+FspanwiselLift = Fspanwise;
 Wouter = sum(selfWeight(foldIndex+1:end)*xDelta); % kg - weight of outer wing
 
 
@@ -860,64 +888,24 @@ Wouter = sum(selfWeight(foldIndex+1:end)*xDelta); % kg - weight of outer wing
 foldMdrag = Mdrag(foldIndex);
 foldSdrag = Sdrag(foldIndex);
 foldFdrag = foldMdrag/dBottom;
-F = F + foldFdrag;
-
-
+Fspanwise = Fspanwise + foldFdrag;
+FspanwiselLift = Fspanwise;
 
 
 
 
 % Lug material
-lugDensity = Materials.AL7075.rho;
-Ftu = Materials.AL7075.ultimateTensile;
+lugMaterial = 'AL7075'; %'AMS6350';
+lugDensity = Materials.(lugMaterial).rho;
+Ftu = Materials.(lugMaterial).ultimateTensile;
+Fty = Materials.(lugMaterial).tensileYield;
+Fsu = Materials.(lugMaterial).shearStrength;
+
 
 % lift force transfered to spar and then to hinge
 % bottom lug calculations
 L = 100e-3;
 gBolt = 1/64*0.0254; % m - lug spacing
-% 1 outboard - 4.12kg (M.S. = 0.12 | 0.12 | 5.2)
-% nLugs = 1;
-% D = 1*0.0254; % m - (3/4 inch) hole diameter -- max bolt diameter in Design 1 sources is 1 inch = 25.4 mm
-% W = 55e-3; % m - lug width
-% t = 115e-3; % m - lug thickness  ------ NOT HAPPENING
-% Kbr = 1.11;
-% Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
-% Ktru = 0.55; % Aav/Abr value much higher than graph values. Need to adjust --- though it does plateau at the end
-
-% 2 outboard - 4.11kg (M.S. = 0.17 | 0.36 | 5.49)
-% nLugs = 2; 
-% D = 1*0.0254; % m - hole diameter
-% W = 60e-3; % m - lug width
-% t = 60e-3; % m - lug thickness 
-% Kbr = 1.115;
-% Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
-% Ktru = 0.55;
-
-% 3 outboard - 3.88kg (M.S. = 0.32 | 0.21 | 7.11)
-% nLugs = 3; 
-% D = 1*0.0254; % m - hole diameter - 3.88kg (M.S. = 0.32 | 0.21 | 7.11) -- doesnt work with bolt bending
-% W = 50e-3; % m - lug width
-% t = 50e-3; % m - lug thickness 
-% D = 7/8*0.0254; % m - hole diameter - 3.47kg (M.S. = 0.15 | 0.12 | 6.1)
-% W = 45e-3; % m - lug width
-% t = 50e-3; % m - lug thickness 
-% Kbr = 1;
-% Kt = 0.95; % curve 2: 7075-T6 steel plate lug > 0.5in
-% Ktru = 0.55;
-
-% 4 outboard - 
-% nLugs = 4; 
-% D = 7/8*0.0254; % m - hole diameter -- 3.61kg (M.S. = 0.13 | 0.33 | 4.5 | 1.52)
-% W = 45e-3; % m - lug width
-% t = 40e-3; % m - lug thickness 
-% % D = 3/4*0.0254; % m - hole diameter -- 3.4kg (M.S. = 0.21 | 0.17 | 4.9 | 0.28)
-% % W = 35e-3; % m - lug width
-% % t = 50e-3; % m - lug thickness
-% Kbr = 0.85;
-% Kt = 0.98; % curve 2: 7075-T6 steel plate lug > 0.5in
-% Ktru = 0.55;
-
-% add in bottom hinges having a chord wise separation from the top lug
 
 
 % SET UP LOOP FOR NUMBER OF LUGS AND FOR BOLT DIAMETER. ALL IN BOLT BENDING
@@ -926,6 +914,7 @@ gBolt = 1/64*0.0254; % m - lug spacing
 % Kbr - D/t = 2
 RDratio = 0.6:0.2:4;
 Kbr_vec = [0.2 0.55 0.83 1.1 1.3 1.5 1.7 1.9 1.05 2.18 2.3 2.45 2.5 2.65 2.7 2.8 2.9 2.95];
+
 
 %Kt - curve 2
 WDratio = 1:0.5:4.5;
@@ -940,101 +929,167 @@ Ktru = 0.55;
 % 3 lugs - 1.80kg | D = 9/16" | t = 20mm | W = 49mm
 % 4 lugs - 1.73kg | D = 9/16" | t = 17mm | W = 43mm
 
-nLugs = 4; % number of lugs on outboard section % can go higher to get lighter, but then pin is longer
-D_vec = {'9/16', '5/8', '3/4', '7/8', '1'}; % inch - bolt diameter
-BBM_vals = [3140 4320 7450 11850 17670];
+nBLugs = 4; % number of lugs on outboard section % can go higher to get lighter, but then pin is longer
+D_vec =  {'1/4', '5/16', '3/8', '7/16', '1/2', '9/16', '5/8'};%, '3/4', '7/8', '1'}; % inch - bolt diameter
+BBM_vals = [276,    539,   932,   1480,  2210,   3140,  4320];%, 7450, 11850, 17670];
+D_vec =  {'1', '1.5', '2', '2.5', '3'};%, '3/4', '7/8', '1'}; % inch - bolt diameter
+
+D_vec = (20:5:60)/1000;
+BBM_vals = 4320*ones(1,5); %[4320, 8000, 16000, 32000, 64000];%, 7450, 11850, 17670];
+
+
+%t_vec = 80e-3; %
+t_vec = (70:5:110)/1000; % m --- can you get materials by the millimeter or is it every 5 millimeters
+%D_vec = 50e-3; %
+D_vec = (20:10:120)/1000;
+
+
+BBM_vals = [4320];
+for i = 1:length(D_vec)-1
+    BBM_vals(end+1) = BBM_vals(end)*2;%, 7450, 11850, 17670];
+end
+
+
 % D_vec = {'7/8', '1'}; % inch - bolt diameter
 % BBM_vals = [11850 17670]; % ---------------- need to check if this is fine for bolt bending since table for since shear. Should be since single shear concept used. Need to validate. Need to account for bottom being spaced away from top
 BBMmap = containers.Map(D_vec,BBM_vals);
-t_vec = (10:60)/1000; % m --- can you get materials by the millimeter or is it every 5 millimeters
 t = 50e-3;
-% W_vec = (20:60)/1000; % m
-% W = 50e-3; 
+%{
+% Fspanwise = Fspanwise/2;
+fprintf('\n\nLug Analysis--------------------------------------------------\n')
+fprintf('Bottom Lug\n')
+for nBLugs = [1:4]
+    dIndex = 1;
+    minWdisp = 100;
+    for D_name = D_vec
+        %D = str2num(D_name{1})*0.0254; % convert to m
+        D = D_name;
+        D_arr(dIndex) = D_name; % m
+        tIndex = 1;
+Aav1 = 0;
+        for t = t_vec
+    %     for W = W_vec
+            Wlug = 5e-3; 
+            [MSsu, MSsy, MSteu, MStey, MStr, MSbs, MSbb] = deal(0); 
+                
+            while min([MSsu, MSsy, MSteu, MStey, MStr, MSbs, MSbb]) < 0.1 % loop through increasing W to get actual lowest weight for D,t combination 
+                
+                if Wlug > 1 || Wlug/D > 5 || Aav1/(D*t) > 1.4
+                    Wlug = Inf;
+                    [MSsu, MSsy, MSteu, MStey, MStr, MSbs, MSbb, lugWeightF] = deal(Inf);
+                    break;
+                end
+                Wlug = Wlug + 5e-3; % add 5 mm
+                
+                ii = 1.1;
+                if Wlug/D < ii
+                    Wlug = ii*D;
+                end     
+%
+%                 D = 50e-3;
+%                 Wlug = 70e-3;
+                R = Wlug/2; %*0.9; % m - lug radius
+                A1 = R - D/2*(1-cosd(45));
+                A2 = R - D/2;
+                A3 = A2;
+                A4 = A1;
+                Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
+                
+                
+%                 if Aav1/(D*t) > 5
+%                     continue
+%                 end
 
-dIndex = 1;
+                % find graph coefficient values 
+                [~, KbrIndex] = min(abs(R/D - RDratio)); % index closest to front spar location
+                [~, KtIndex] = min(abs(Wlug/D - WDratio)); % index closest to rear spar location
+                Kbru = Kbr_vec(KbrIndex);
+                Kt = Kt_vec(KtIndex);
+                Ktru = 0.55;
 
-for D_name = D_vec
-    D = str2num(D_name{1})*0.0254; % convert to m
-    tIndex = 1;
-    
-    for t = t_vec
-%     for W = W_vec
-        Wlug = 5e-3; 
-        [MS1s, MS1te, MS1tr, MSbb] = deal(0);
+                A1 = R - D/2*(1-cosd(45));
+                A2 = R - D/2;
+                A3 = A2;
+                A4 = A1;
+                Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
+
+                lugWeightF = lugDensity * ((nBLugs+1)*0.51+nBLugs)*t*(L*Wlug+pi/8*(Wlug^2-2*D^2)); % double shear lug - accounted for with thickness weight
+                lugTotalWidth = t*(1.51*nBLugs + 0.51) + 2*nBLugs*gBolt;
+                lugWeightF = lugWeightF + lugDensity*pi*D^2*lugTotalWidth; % add mass of pin needed
+
+        %         fprintf('Front \nR/D = %.2f (range 0.7-4)\nD/t = %.1f (range 2-30)\nW/D = %.2f (range 1-5)\nAav/Abr = %.2f (range 0-1.4)\n',R/D,D/t,W/D,Aav1/(D*t));
+        %         fprintf('--------------------------------\n')
+        %         fprintf('total front lug weight = %.2f kg\n',lugWeightF)
+
+                Psu = Kbru*Ftu*D*t; % N - shear out ultimate
+                Psy = Kbru*Fty*D*t; % N - shear out yield
+                Ptu = Kt*Ftu*(Wlug-D)*t; % N - tension ultimate
+                Pty = Kt*Fty*(Wlug-D)*t; % N - tension yield
+                Ptr = Ktru*Ftu*D*t; % N - transverse load
+                Pbs = 2*Fsu*pi*R^2; % bolt shear % pin same material, no need for bushing
+                bLugM = t/(2*(nBLugs+1)) + 0.51*t/(2*nBLugs) + gBolt;
+                BBM = BBMmap(D_name) * 0.0254 * 4.45 / g; % get ultimate bending moment corresponding to this bolt diameter
         
-        while min([MS1s, MS1te, MS1tr, MSbb]) < 0.1 % loop through increasing W to get actual lowest weight for D,t combination 
-        
-            if Wlug > 0.5 % 
-                Wlug = Inf;
-                [MS1s, MS1te, MS1tr, MSbb,lugWeightF] = deal(Inf);
-                break;
+                
+                % full moment of particular spar at fold goes to bottom hinge
+                % Full vertical force of outer wing goes to top lug
+                MSsu = Psu/(Fspanwise/nBLugs*g*1.5*1.15) - 1; % shear out ultimate
+                MSsy = Psy/(Fspanwise/nBLugs*g*1.15) - 1; % shear out yield              
+                MSteu = Ptu/(Fspanwise/nBLugs*g*1.5*1.15) - 1; % tension ultimate
+                MStey = Pty/(Fspanwise/nBLugs*g*1.15) - 1; % tension yield                
+                MStr = Ptr/(-foldSf/nBLugs*g*1.5*1.15) - 1; % 
+                MSbs = Pbs/(Fspanwise/nBLugs*g*1.5*1.15) - 1; %(nBLugs+1)*Pbs/(Fspanwise/nBLugs*g*1.5*1.15) - 1;
+                MSbb = BBM/(Fspanwise/(nBLugs*(nBLugs+1))*bLugM) - 1; % bolt bending in limit case
+                %fprintf('shear = %.2f \ntension = %.2f \ntransverse = %.2f \nbolt bending = %.2f\n',MS1s,MS1te,MS1tr,MSbb)
+                %fprintf('%.2f | %.2f | %.2f | .2f\n',R/D,D/t,W/D,Aav/Abr)
+                %fprintf('Min weight %.0f lugs | m: %.2f kg | D: %.0f mm | total width: %.0f mm | t: %.0f mm | W: %.0f mm | %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n',nBLugs,minWdisp,D_name*1000,lugTotalWidth*1000, t*1000, Wlug*1000, MSsu,MSsy,MSteu,MStey,MStr,MSbs,MSbb)
+%                 minWvalues(1),minWvalues(2),minWvalues(3),minWvalues(4),minWvalues(5),minWvalues(6),minWvalues(7),minWvalues(8),minWvalues(9),minWvalues(10))
+
+
+
             end
-            Wlug = Wlug + 1e-3; % add 5 mm
-            
-            
-            
-            R = Wlug/2; % m - lug radius
-            
-            % find graph coefficient values 
-            [~, KbrIndex] = min(abs(R/D - RDratio)); % index closest to front spar location
-            [~, KtIndex] = min(abs(Wlug/D - WDratio)); % index closest to rear spar location
-            Kbr = Kbr_vec(KbrIndex);
-            Kt = Kt_vec(KtIndex);
-            Ktru = 0.55;
 
-            A1 = R - D/2*(1-cosd(45));
-            A2 = R - D/2;
-            A3 = A2;
-            A4 = A1;
-            Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
+            MSshearu(dIndex,tIndex) = MSsu;
+            MSsheary(dIndex,tIndex) = MSsy;
+            MStensionu(dIndex,tIndex) = MSteu;
+            MStensiony(dIndex,tIndex) = MStey;
+            MStransverse(dIndex,tIndex) = MStr;
+            MSbshear(dIndex,tIndex) = MSbs;
+            MSbending(dIndex,tIndex) = MSbb;
+            weightLug(dIndex,tIndex) = lugWeightF;
+            WLightest(dIndex,tIndex) = lugTotalWidth*1000; %Wlug*1000;
 
-            lugWeightF = lugDensity * ((nLugs+1)*0.51+nLugs)*t*(L*Wlug+pi/8*(Wlug^2-2*D^2)); % double shear lug - accounted for with thickness weight
-            lugWeightF = lugWeightF + lugDensity*pi*D^2*(t*(1.51*nLugs + 0.51) + 2*nLugs*gBolt) ; % add mass of pin needed
-    %         fprintf('Front \nR/D = %.2f (range 0.7-4)\nD/t = %.1f (range 2-30)\nW/D = %.2f (range 1-5)\nAav/Abr = %.2f (range 0-1.4)\n',R/D,D/t,W/D,Aav1/(D*t));
-    %         fprintf('--------------------------------\n')
-    %         fprintf('total front lug weight = %.2f kg\n',lugWeightF)
+            %fprintf('D: %.0f mm | t: %.0f mm| W: %.0f mm | m: %.2f kg | %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n',D_name*1000,t*1000,Wlug*1000,lugWeightF,R/D,D/t,W/D,Aav/Abr   MSsu,MSsy,MSteu,MStey,MStr,MSbs,MSbb)
 
-            P1s = Kbr*Ftu*D*t; % N - shear bearing stress
-            P1te = Kt*Ftu*(Wlug-D)*t; % N - tension
-            P1tr = Ktru*Ftu*D*t; % N - transverse load3
-            bLugM = t/(2*(nLugs+1)) + 0.51*t/(2*nLugs) + gBolt;
+            if lugWeightF < minWdisp
+                minWdisp = lugWeightF;
+                Ddisp = D_name*1000;
+                minWvalues = [lugTotalWidth*1000, t*1000, Wlug*1000, MSsu,MSsy,MSteu,MStey,MStr,MSbs,MSbb];
+            end
+            tIndex = tIndex + 1;
 
-            BBM = BBMmap(D_name{1}) * 0.0254 * 4.45 / g; % get ultimate bending moment corresponding to this bolt diameter
-
-            % full moment of particular spar at fold goes to bottom hinge
-            % Full vertical force of outer wing goes to top lug
-            MS1s = P1s/(F/nLugs*g*1.5*1.15) - 1;
-            MS1te = P1te/(F/nLugs*g*1.5*1.15) - 1;
-            MS1tr = P1tr/(-foldSf/nLugs*g*1.5*1.15) - 1; % not sure if it would be taken by all lugs or just the outboard ones
-            MSbb = BBM/(F/(nLugs*(nLugs+1))*bLugM*1.5*1.15) - 1;
-    %         fprintf('shear = %.2f \ntension = %.2f \ntransverse = %.2f \nbolt bending = %.2f\n',MS1s,MS1te,MS1tr,MSbb)
         end
-        
-        MSshear(dIndex,tIndex) = MS1s;
-        MStension(dIndex,tIndex) = MS1te;
-        MStransverse(dIndex,tIndex) = MS1tr;
-        MSbending(dIndex,tIndex) = MSbb;
-        weightLug(dIndex,tIndex) = lugWeightF;
-        WLightest(dIndex,tIndex) = Wlug*1000;
-        
-        fprintf('D: %3s in | t: %.0f mm| W: %.0f mm | m: %.2f kg | %.2f %.2f %.2f %.2f\n',D_name{1},t*1000,Wlug*1000,lugWeightF,MS1s,MS1te,MS1tr,MSbb)
-        
-        tIndex = tIndex + 1;
-        
+        dIndex = dIndex + 1;
     end
-    dIndex = dIndex + 1;
+    
+    try
+        fprintf('--Min weight %.0f lugs | m: %.2f kg | D: %.0f mm | total width: %.0f mm | t: %.0f mm | W: %.0f mm | %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n',nBLugs,minWdisp,Ddisp,minWvalues(1),minWvalues(2),minWvalues(3),minWvalues(4),minWvalues(5),minWvalues(6),minWvalues(7),minWvalues(8),minWvalues(9),minWvalues(10))
+    catch
+        fprintf('%.0f lugs : no solution\n',nBLugs)
+    end
 end
+
 
 %t_vec = W_vec;
 yLabelName = 'Margin Of Safety';
 xLabelName = 'thickness (mm)'; %'width (mm)'
 xlimits = [min(t_vec) max(t_vec)]*1000;
 
-figure(6)
-subplot(3,2,1)
-for j = 1:size(MSshear,1)
-    plot(t_vec*1000, MSshear(j,:),'linewidth',3)
-    legend_labels{j} = sprintf('D = %3s inch.', D_vec{j});
+figure(8)
+subplot(2,2,1)
+for j = 1:size(MSshearu,1)
+    plot(t_vec*1000, MSshearu(j,:),'linewidth',3)
+    legend_labels{j} = sprintf('D = %.0f mm', D_vec(j)*1000);
     hold on;
 end
 plot(xlimits,[0.1 0.1],'k--')
@@ -1044,9 +1099,9 @@ xlabel(xLabelName)
 ylabel(yLabelName)
 title('Shear')
 
-subplot(3,2,2)
-for j = 1:size(MStension,1)
-    plot(t_vec*1000, MStension(j,:),'linewidth',3)
+subplot(2,2,2)
+for j = 1:size(MStensionu,1)
+    plot(t_vec*1000, MStensionu(j,:),'linewidth',3)
     hold on;
 end
 plot(xlimits,[0.1 0.1],'k--')
@@ -1054,7 +1109,7 @@ xlabel(xLabelName)
 ylabel(yLabelName)
 title('Tension')
 
-subplot(3,2,3)
+subplot(2,2,3)
 for j = 1:size(MStransverse,1)
     plot(t_vec*1000, MStransverse(j,:),'linewidth',3)
     hold on;
@@ -1064,7 +1119,7 @@ xlabel(xLabelName)
 ylabel(yLabelName)
 title('Transverse')
 
-subplot(3,2,4)
+subplot(2,2,4)
 for j = 1:size(MSbending,1)
     plot(t_vec*1000, MSbending(j,:),'linewidth',3)
     hold on;
@@ -1074,29 +1129,186 @@ xlabel(xLabelName)
 ylabel(yLabelName)
 title('Bending')
 
-subplot(3,2,5)
+figure(9)
+subplot(1,2,1)
 for j = 1:size(weightLug,1)
     plot(t_vec*1000, weightLug(j,:),'linewidth',3)
     hold on;
 end
 xlabel(xLabelName)
 ylabel('weight (kg)')
-title('Weight')
+% title('Weight')
 
-subplot(3,2,6)
+subplot(1,2,2)
 for j = 1:size(WLightest,1)
     plot(t_vec*1000, WLightest(j,:),'linewidth',3)
     hold on;
 end
+legend(legend_labels{1:end-1})
 xlabel(xLabelName)
 ylabel('Width (mm)')
 WnonInf = WLightest(~isinf(WLightest));
 ylim([min(min(WnonInf))*0.9 max(max(WnonInf))*1.1])
-title('Lug Width')
+% title('Lug Width')
 
-
+%}
 
 % figure out how lugs attach to rotary actuator
 % figure out how much power rotary actuator needs to rotate wing
-%}
 
+
+% rotary actuator calculation
+% can use self weight because outer wing has not fuel 
+outerCG = sum(selfWeight(foldIndex+1:end).*(x(foldIndex+1:end) - x(foldIndex)))/Wouter;
+Tra = (outerCG- x(foldIndex))*Wouter; % kgm - torque from rotary actuator
+
+minTopLugWeight = [];
+minTopLugWidth = [];
+% force on top lug
+FupAtFold = sum(S0(foldIndex:end)*xDelta);
+fprintf('\nTop Lug\n')
+nLugsVec = 11:12; %2:15;
+for nTLugs = nLugsVec %[nLugsVec,11]
+    dIndex = 1;
+    minWdisp = 100;
+    for D_name = D_vec
+        D = D_name; 
+        D_arr(dIndex) = D; % m
+        tIndex = 1;
+Aav1 = 0;
+        for t = t_vec
+    %     for W = W_vec
+            Wlug = 5e-3; 
+            [MSsu, MSsy, MSteu, MStey, MStr, MSbs, MSbb] = deal(0); 
+                
+            while min([MSsu, MSsy, MSteu, MStey, MStr, MSbs, MSbb]) < 0.1 % loop through increasing W to get actual lowest weight for D,t combination 
+
+                if Wlug > 1 || Wlug/D > 5 || Aav1/(D*t) > 1.4
+                    Wlug = Inf;
+                    [MSsu, MSsy, MSteu, MStey, MStr, MSbs, MSbb, lugWeightF] = deal(Inf);
+                    break;
+                end
+                Wlug = Wlug + 5e-3; % add 5 mm
+                
+                ii = 1.1;
+                if Wlug/D < ii
+                    Wlug = ii*D;
+                end     
+%
+%                 D = 50e-3;
+%                 Wlug = 70e-3;
+                R = Wlug/2; %*0.9; % m - lug radius
+                A1 = R - D/2*(1-cosd(45));
+                A2 = R - D/2;
+                A3 = A2;
+                A4 = A1;
+                Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
+                
+                
+%                 if Aav1/(D*t) > 5
+%                     continue
+%                 end
+
+                % find graph coefficient values 
+                [~, KbrIndex] = min(abs(R/D - RDratio)); % index closest to front spar location
+                [~, KtIndex] = min(abs(Wlug/D - WDratio)); % index closest to rear spar location
+                Kbru = Kbr_vec(KbrIndex);
+                Kt = Kt_vec(KtIndex);
+                Ktru = 0.55;
+
+                A1 = R - D/2*(1-cosd(45));
+                A2 = R - D/2;
+                A3 = A2;
+                A4 = A1;
+                Aav1 = 6/(3/A1 + 1/A2 + 1/A3 + 1/A4);
+
+                lugWeightF = lugDensity * ((nTLugs+1)*0.51+nTLugs)*t*(L*Wlug+pi/8*(Wlug^2-2*D^2)); % double shear lug - accounted for with thickness weight
+                lugTotalWidth = t*(1.51*nBLugs + 0.51) + 2*nBLugs*gBolt;
+                lugWeightF = lugWeightF + lugDensity*pi*D^2*lugTotalWidth; % add mass of pin needed
+        %         fprintf('Front \nR/D = %.2f (range 0.7-4)\nD/t = %.1f (range 2-30)\nW/D = %.2f (range 1-5)\nAav/Abr = %.2f (range 0-1.4)\n',R/D,D/t,W/D,Aav1/(D*t));
+        %         fprintf('--------------------------------\n')
+        %         fprintf('total front lug weight = %.2f kg\n',lugWeightF)
+
+                Psu = Kbru*Ftu*D*t; % N - shear out ultimate
+                Psy = Kbru*Fty*D*t; % N - shear out yield
+                Ptu = Kt*Ftu*(Wlug-D)*t; % N - tension ultimate
+                Pty = Kt*Fty*(Wlug-D)*t; % N - tension yield
+                Ptr = Ktru*Ftu*D*t; % N - transverse load
+                Pbs = 2*Fsu*pi*R^2; % bolt shear % pin same material, no need for bushing
+                bLugM = t/(2*(nTLugs+1)) + 0.51*t/(2*nTLugs) + gBolt;
+                BBM = BBMmap(D_name) * 0.0254 * 4.45 / g; % get ultimate bending moment corresponding to this bolt diameter
+
+                % full moment of particular spar at fold goes to bottom hinge
+                % Full vertical force of outer wing goes to top lug
+                MSsu = Psu/(FspanwiselLift/nTLugs*g*1.5*1.15) - 1; % shear out ultimate
+                MSsy = Psy/(FspanwiselLift/nTLugs*g*1.15) - 1; % shear out yield              
+                MSteu = Ptu/(FspanwiselLift/nTLugs*g*1.5*1.15) - 1; % tension ultimate
+                MStey = Pty/(FspanwiselLift/nTLugs*g*1.15) - 1; % tension yield
+                MStr = Ptr/(-FupAtFold/nTLugs*g*1.15) - 1; % 
+                MSbs = Pbs/(FspanwiselLift/nTLugs*g*1.5*1.15) - 1;
+                MSbb = BBM/(FspanwiselLift/(nTLugs*(nTLugs+1))*bLugM) - 1; % bolt bending in limit case
+        %         fprintf('shear = %.2f \ntension = %.2f \ntransverse = %.2f \nbolt bending = %.2f\n',MS1s,MS1te,MS1tr,MSbb)
+            end
+
+            MSshearu(dIndex,tIndex) = MSsu;
+            MSsheary(dIndex,tIndex) = MSsy;
+            MStensionu(dIndex,tIndex) = MSteu;
+            MStensiony(dIndex,tIndex) = MStey;
+            MStransverse(dIndex,tIndex) = MStr;
+            MSbshear(dIndex,tIndex) = MSbs;
+            MSbending(dIndex,tIndex) = MSbb;
+            weightLugT(dIndex,tIndex) = lugWeightF;
+            WLightestT(dIndex,tIndex) = lugTotalWidth*1000; %Wlug*1000;
+
+            %fprintf('D: %3s in | t: %.0f mm| W: %.0f mm | m: %.2f kg | %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n',D_name{1},t*1000,Wlug*1000,lugWeightF,MSsu,MSsy,MSteu,MStey,MStr,MSbs,MSbb)
+
+            if lugWeightF < minWdisp
+                minWdisp = lugWeightF;
+                Ddisp = D_name*1000;
+                minWvalues = [lugTotalWidth*1000, t*1000, Wlug*1000, MSsu,MSsy,MSteu,MStey,MStr,MSbs,MSbb];
+            end
+            tIndex = tIndex + 1;
+
+        end
+        dIndex = dIndex + 1;
+    end
+    
+    minTopLugWeight(end+1) = minWdisp;
+    minTopLugWidth(end+1) = lugTotalWidth*1000; %Wlug*1000;
+    fprintf('Min weight %.0f lugs | m: %.2f kg | D: %.0f mm | total width: %.0f mm |t: %.0f mm | W: %.0f mm | %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n',nTLugs,minWdisp,Ddisp,minWvalues(1),minWvalues(2),minWvalues(3),minWvalues(4),minWvalues(5),minWvalues(6),minWvalues(7),minWvalues(8),minWvalues(9),minWvalues(10))
+end
+
+figure(10)
+subplot(1,2,1)
+for j = 1:size(weightLugT,1)
+    plot(t_vec*1000, weightLugT(j,:),'linewidth',3)
+    hold on;
+end
+xlabel(xLabelName)
+ylabel('weight (kg)')
+
+
+subplot(1,2,2)
+for j = 1:size(WLightestT,1)
+    plot(t_vec*1000, WLightestT(j,:),'linewidth',3)
+    hold on;
+end
+legend(legend_labels{1:end-1})
+xlabel(xLabelName)
+ylabel('Width (mm)')
+WnonInf = WLightestT(~isinf(WLightestT));
+ylim([min(min(WnonInf))*0.9 max(max(WnonInf))*1.1])
+
+
+figure(11)
+% subplot(1,2,1)
+plot(nLugsVec,minTopLugWeight(1:end-1))
+xlabel('number of top outboard lugs')
+ylabel('weight (kg)')
+
+% subplot(1,2,2)
+% plot(nLugsVec,minTopLugWidth(1:end-1))
+% xlabel('number of top outboard lugs')
+% ylabel('total width (mm)')
+
+end

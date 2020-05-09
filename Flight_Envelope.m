@@ -15,16 +15,16 @@ clf;
             'defaultAxesXGrid','on',...
             'defaultAxesYGrid','on')
         
-albatross_parameters_maritime;
+%albatross_parameters_maritime;
 albatross_parameters_airfield;
 
 % Input aerodynamic parameters.
 g = 9.81;                 % gravity in SI
-MTOW = 23000*g;           % N --------------------------------------------- from design min to design max weight 
+MTOW = 6300*g;           % N --------------------------------------------- from design min to design max weight 
 rho0 = 1.225;             % kg/m3 - SL density 
 W_L = MTOW/S;             % kg/m^2 wing loading
 
-alt = 000; % ft
+alt = 0000; % ft
 if alt < 20000
     rho = rho0;
     U_1 = 15.2;               % m/s - 50 ft/s gust cruise
@@ -50,7 +50,7 @@ V_C = 200*0.514444; % knots
 V_D = 320*0.514444; % knots
 
 % max loading factor
-nmax_positive = min(3.8, 2.1 + (10900/(MTOW/g + 4536)));
+nmax_positive = min(3.8, 2.1 + (10900/(22500*g/g + 4536)));
 nmax_negative = -0.4 * nmax_positive;
 
 % Lift curve slope
@@ -85,11 +85,11 @@ V_stalldown = V_stalldown*1.94384;
 figure(1);
 hold on;
 plot(Va_p,n_p,'b');
-title('Flight Envelope');
+%title('Flight Envelope');
 xlabel('Airspeed (knots)');
 ylabel('Load Factor n');
-text(10,3,'Gust Limits','Color','red','FontSize',10)
-text(10,2.5,'Manoeuvre Limits','Color','blue','FontSize',10)
+text(10,3.5,'Gust Limits','Color','red','FontSize',15)
+text(10,3,'Manoeuvre Limits','Color','blue','FontSize',15)
 
 
 %% Array for the dive manourevility
@@ -180,4 +180,5 @@ y = [1 1];
 plot(x,y,'k');
 
 %axis([0 V_D*1.1 -3.0482 5.0482]);
-box on
+%box on
+ylim([-2 4])
