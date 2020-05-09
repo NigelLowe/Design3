@@ -105,7 +105,7 @@ for mission = missionType
         horiTailWeight = 0.19*((MTOW*n)^0.363*Svt^1.089*M0^0.601*Lt^(-0.726)*(1+Sr/Svt)^0.217*ARvt^0.337*(1+taper_rvt)^0.363*(cosd(sweepvt)^(-0.484)))^1.014; % Nicolai - scale since have v tail
         tailWeight = vertTailWeight*sind(tailAngle)^2+horiTailWeight*cosd(tailAngle)^2; % lb - scale since using V tail https://vtechworks.lib.vt.edu/bitstream/handle/10919/26482/Dissertation3a.pdf?sequence=1&isAllowed=y
         frontGearWeight = 0.125*(Mland*n)^0.566*(Ln/12)^0.845; % Nicolai according to Gudmundsson
-        rearGearWeight = 2*0.054*(Mland*n)^0.684*(Lm/12)^0.601; % Nicolai according to Gudmundsson
+        rearGearWeight = 0.054*(Mland*n)^0.684*(Lm/12)^0.601; % Nicolai according to Gudmundsson
 
         basic(1) = weightClass(              'Fuselage',  fuselageWeight,      0.5, L);
         basic(2) = weightClass(             'Main Wing',      wingWeight, rearWing, L); % multiplied by 1.75 for folding mechanism
@@ -126,8 +126,8 @@ for mission = missionType
         Km = 1; % duct material factor (1 for M < 1)
         engineWeight = 4189*0.85; % lb - 85% of TP-400
         ne = 1; % number of engines
-        np = 1; % number of propellers
-        nb = 4; % number of blades per propeller
+        np = 2; % number of propellers
+        nb = 3; % number of blades per propeller
         dp = 3*3.28084; % ft - propeller diameter
         hp = 11000; % shaft horsepower
         duct = 0.32*Ni*Ld*Ai^0.65*P2*0.6; % duct support structure (internal only)
@@ -135,7 +135,7 @@ for mission = missionType
         totalDuct = duct + internalDuct;
         wingFuel = sum(wingFuelWeight);
         totalFuelWeight = wingFuel+internalFuelWeight;
-        maxFuelWeight = 18341; % max fuel - so the below vaues are the same for all cases %%%%%%%%%%%% should change to just internal fuel weight fror self sealing
+        maxFuelWeight = 14926; % max fuel - so the below vaues are the same for all cases %%%%%%%%%%%% should change to just internal fuel weight fror self sealing
         totalFuelGallons = maxFuelWeight/rho_fuel*1000*0.214172; % Imperial gallon (should be US (0.26) but dont want a bigger value)
         bladderCells = 23.1*(totalFuelGallons*10^-2)^0.758; % non-self sealing bladder cells
         cellSupports = 7.91*(totalFuelGallons*10^-2)^0.854; % fuel system bladder cell backing and supports
@@ -161,7 +161,7 @@ for mission = missionType
         w_blade = 8*113.3*2.20462;
         %w_blade = Nrotor*0.00008377*shaftWallT*liftOffset*rotorRadius^3/(2*(separationFraction - tipClearance)*t2r^2);
         w_hub = Nrotor*(0.17153*shaftWallT*rotorRadius*Nblade + 0.000010534*(w_blade/Nrotor)*Vtip^2*t2r/rotorRadius);
-        w_shaft = 2 * Nrotor*0.081304*shaftWallT*liftOffset*rotorRadius^2*2*separationFraction/t2r; % factor of 2 for support structure
+        w_shaft = 1.8 * Nrotor*0.081304*shaftWallT*liftOffset*rotorRadius^2*2*separationFraction/t2r; % factor of 2 for support structure
         
         prop(1) = weightClass(               'Engine',    engineWeight,  0.19, L);
         prop(2) = weightClass(     'Propeller Blades',     100*2.20462, 0.015, L); % 374.1795 lb - using equation
