@@ -65,7 +65,9 @@ for mission_index = missionIndecies
         
         end
         
+       
  %create ALT vs Vel Contour (with endurance)
+ 
     if ~exist('plotOtherGraphs','var')
          figure(mission_index)
          hold on

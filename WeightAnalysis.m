@@ -13,7 +13,7 @@ close all
 
 % airfield field 2, maritime last 2
 pl_vec = [500 3500]; % single payload value for run
-en_vec = [62 48 37 25];  % single endurance value for run
+en_vec = [60 45 30 18]; %[62 48 37 25];  % single endurance value for run
 tow_vec = [22.5e3 18.5e3]; % TOW for run
 
 insideFuel = [];
@@ -48,29 +48,31 @@ for mission = missionType
         close all;
         clc;
         %clearvars -except wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
-        clearvars -except wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except mean_ac wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
         disp(mission);
         fprintf('%.0f kg payload | %.0f hr endurance\n', pl_num, en_num);
 
-        % convert variables to imperial for equations
-        S_ft = S*10.7639; % ft^2
-
         L = 16; % m - fuselage length
         H = 2.5; % m - fueslage height
-        cg_var = 0.45; % start cg position
+        LEMAC = 6.05; % m - leading edge of mean aerodynamic chord
+        cg_var = 0.45; % start cg position - percent length
         rearWing = cg_var;
         inFuel = 0.49; % internal fuel position
-
+        x_ac = 7.1; % m - aerodymanic chord location
+        
+        % convert variables to imperial for equations
+        S_ft = S*10.7639; % ft^2
+        
         %% Basic Weights
         % masses in lb for calculations
         MTOW = max(tow_vec)*2.20462; % lb 
         M0 = 120/340; % max flight at sea level
         n = 2.5; % max load factor
         tc_ratio = 0.15;
-        c_bar = 2.31; %mean(c); % mean aerodynamic chord of wing
+        c_bar = mean_ac; %mean(c); % mean aerodynamic chord of wing
         Lt = (1-rearWing)*L*3.28084; % ft - tail moment arm 
         sweep = 0; % deg
         tailAngle = 39; % deg
@@ -135,7 +137,7 @@ for mission = missionType
         totalDuct = duct + internalDuct;
         wingFuel = sum(wingFuelWeight);
         totalFuelWeight = wingFuel+internalFuelWeight;
-        maxFuelWeight = 14926; % max fuel - so the below vaues are the same for all cases %%%%%%%%%%%% should change to just internal fuel weight fror self sealing
+        maxFuelWeight = 12650; % max fuel - so the below vaues are the same for all cases %%%%%%%%%%%% should change to just internal fuel weight fror self sealing
         totalFuelGallons = maxFuelWeight/rho_fuel*1000*0.214172; % Imperial gallon (should be US (0.26) but dont want a bigger value)
         bladderCells = 23.1*(totalFuelGallons*10^-2)^0.758; % non-self sealing bladder cells
         cellSupports = 7.91*(totalFuelGallons*10^-2)^0.854; % fuel system bladder cell backing and supports
@@ -209,7 +211,7 @@ for mission = missionType
         % empty (no fuel)
         totalWeight0 = basicWeight + propWeight;
         totalMoment0 = basicMoment + propMoment;
-        cg_empty0 = (totalMoment0/totalWeight0)/L*100;
+        cg_empty0 = ((totalMoment0/totalWeight0)-x_ac)/c_bar; %(totalMoment0/totalWeight0)/L*100;
         
         totalWeight = basicWeight + propWeight + payloadWeight;
         totalMoment = basicMoment + propMoment + payloadMoment;
@@ -223,8 +225,7 @@ for mission = missionType
         fprintf('total moment: %.0f kgm\n\n',totalMoment);
 
         cg(1) = totalMoment/totalWeight(1);
-        cg_percent = cg(1)/L*100;
-        x_ac = 7.1;
+        cg_percent = (cg(1)-x_ac)/c_bar; %cg(1)/L*100;
         fprintf('cg empty: %.3f (%.3f %%)(%.3f %%)\n',cg_empty,cg_empty/L*100,(cg_empty-x_ac)/c_bar);
         fprintf('cg start: %.3f m (%.3f %%)\n\n',cg(1),cg_percent);
 
@@ -255,7 +256,7 @@ for mission = missionType
         
         %t_vec{row,col} = (0:length(fused))*time_res;
         t_vec{row,col} = t_run;
-        cg_percent_vec{row,col} = cg/L*100; %(cg - x_ac)/c_bar; %
+        cg_percent_vec{row,col} = cg/L*100; %(cg-x_ac)/c_bar;
         allWeight{row,col} = totalWeight;
         
         % Print order of components
@@ -281,7 +282,7 @@ for mission = missionType
 end
 
 %%
-neutralPoint = 7.825277/L*100;
+neutralPoint = (7.825277-x_ac)/c_bar; %7.825277/L*100;
 
 % set default figure parameters
         set(groot,'defaultLineLineWidth',2.0,...
@@ -294,6 +295,7 @@ arraySize = size(cg_percent_vec,1);
 xLimits = [42 49];
 yLimits1 = [0 75];
 yLimits2 = [5000 25000];
+xAxisName = 'cg location (% MAC)';
 
 figure(1)
 subplot(1,2,1)
@@ -305,8 +307,8 @@ end
 plot([neutralPoint neutralPoint], yLimits1,'k--')
 legend(legend_labels,'location','NE')
 ylabel('endurance (hr)')
-xlabel('cg location (% aircraft length)')
-xlim(xLimits)
+xlabel(xAxisName)
+%xlim(xLimits)
 ylim(yLimits1)
 title(missionType{1})
 
@@ -319,8 +321,8 @@ end
 plot([neutralPoint neutralPoint], yLimits1,'k--')
 legend(legend_labels,'location','NE')
 ylabel('endurance (hr)')
-xlabel('cg location (% aircraft length)')
-xlim(xLimits)
+xlabel(xAxisName)
+%xlim(xLimits)
 ylim(yLimits1)
 title(missionType{2})
 
@@ -335,8 +337,8 @@ for j = 1:arraySize
 end
 legend(legend_labels,'location','SE')
 ylabel('weight (kg)')
-xlabel('cg location (% aircraft length)')
-xlim(xLimits)
+xlabel(xAxisName)
+%xlim(xLimits)
 ylim(yLimits2)
 title(missionType{1})
 
@@ -348,8 +350,8 @@ for j = 1:arraySize
 end
 legend(legend_labels,'location','SE')
 ylabel('weight (kg)')
-xlabel('cg location (% aircraft length)')
-xlim(xLimits)
+xlabel(xAxisName)
+%xlim(xLimits)
 ylim(yLimits2)
 title(missionType{2})
 
