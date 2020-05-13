@@ -916,7 +916,7 @@ FspanwiselLift = 2.20462*FspanwiselLift; % lbf
 % lift force transfered to spar and then to hinge
 % bottom lug calculations
 L = 100*0.0393701; % inch
-gBolt = 1/64; % inch - lug spacing
+gBolt = 5*0.0393701; %1/64; % inch - lug spacing
 
 
 
@@ -1182,6 +1182,7 @@ ylim([min(min(WnonInf))*0.9 max(max(WnonInf))*1.1])
 % can use self weight because outer wing has not fuel 
 outerCG = sum(selfWeight(foldIndex+1:end).*(x(foldIndex+1:end) - x(foldIndex)))/Wouter;
 Tra = (outerCG- x(foldIndex))*Wouter; % kgm - torque from rotary actuator
+gBolt = 1/64;
 
 [minTopLugWeight, minTopLugWidth, minTopLugD, minTopLugt] = deal([]);
 % force on top lug
