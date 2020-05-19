@@ -48,7 +48,7 @@ for mission = missionType
         close all;
         clc;
         %clearvars -except wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
-        clearvars -except mean_ac wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except maritimeW airfieldW controlLimMaritimeMin controlLimMaritimeMax controlLimAirfieldMin controlLimAirfieldMax vMinLD mean_ac wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
@@ -62,7 +62,11 @@ for mission = missionType
         rearWing = cg_var;
         inFuel = 0.49; % internal fuel position
         x_ac = 7.1; % m - aerodymanic chord location
-        
+        c_bar = mean_ac; %mean(c); % mean aerodynamic chord of wing
+        neutralPointMeter = 7.961;
+        neutralPoint = (neutralPointMeter-x_ac)/c_bar; %7.825277/L*100; % full payload
+
+
         % convert variables to imperial for equations
         S_ft = S*10.7639; % ft^2
         
@@ -72,7 +76,6 @@ for mission = missionType
         M0 = 120/340; % max flight at sea level
         n = 2.5; % max load factor
         tc_ratio = 0.15;
-        c_bar = mean_ac; %mean(c); % mean aerodynamic chord of wing
         Lt = (1-rearWing)*L*3.28084; % ft - tail moment arm 
         sweep = 0; % deg
         tailAngle = 39; % deg
@@ -199,7 +202,11 @@ for mission = missionType
 
         %% Fuel Weight
         % masses in kg %inFuel
-        inFuel = 0.49;
+        if strcmp(mission,'Maritime')
+            inFuel = 0.54;
+        else
+            inFuel = 0.51;
+        end
         fuelStart(1) = weightClass(      'Wing Fuel',     wingFuelWeight, rearWing, L);
         fuelStart(2) = weightClass(  'Internal Fuel', internalFuelWeight,   inFuel, L);
         fuel(1) = weightClass(    'Wing Fuel Flight',     wingFuelWeight, rearWing, L);
@@ -256,7 +263,7 @@ for mission = missionType
         
         %t_vec{row,col} = (0:length(fused))*time_res;
         t_vec{row,col} = t_run;
-        cg_percent_vec{row,col} = cg/L*100; %(cg-x_ac)/c_bar;
+        cg_percent_vec{row,col} = (cg-x_ac)/c_bar; %cg/L*100;
         allWeight{row,col} = totalWeight;
         
         % Print order of components
@@ -277,12 +284,65 @@ for mission = missionType
         InOrderWeights = valuesW(sortIdx);
         front2BackLocations = [InOrderNames; num2cell(InOrderLocation); num2cell(InOrderWeights)];
         disp('       Object name     | location (n.d.) | weight (kg)')
-        disp(front2BackLocations');
+        disp(front2BackLocations');  
     end
+    
+    
+%     de0_maritime = 0.752; % rad
+%     de0_airfield = 1.68; % rad
+%     cmde_maritime = -0.0315; % rad?
+%     cmde_airfield = -0.032; % rad?
+% 
+%     CLtrimM = maritimeW*g/(0.5*1.225*5.87/23.77*100^2*S);
+%     CLtrimA = airfieldW*g/(0.5*1.225*5.87/23.77*97^2*S);
+%     controlLim = @(de0,de,cmde,CL) (( c_bar*(de0+de)*cmde./CL + neutralPointMeter) - x_ac)/c_bar;
+%     controlLimMaritimeMin = controlLim(de0_maritime,25,cmde_maritime,CLtrimM);
+%     controlLimMaritimeMax = controlLim(de0_maritime,-25,cmde_maritime,CLtrimM); 
+%     controlLimAirfieldMin = controlLim(de0_airfield,25,cmde_airfield,CLtrimA); 
+%     controlLimAirfieldMax = controlLim(de0_airfield,-25,cmde_airfield,CLtrimA);
+    
+    controlLim = @(de0,de,cmde,CL) (( c_bar*(de0+de)*cmde./CL + neutralPointMeter) - x_ac)/c_bar;
+
+    if strcmp(mission,'Maritime')
+        de0_maritime = 0.752; % rad
+        cmde_maritime = -0.0315; % rad?
+        maritimeW = totalWeight(1:end-1);
+        %vMinLD = linspace(136,104,length(maritimeW));    
+        CLtrim = totalWeight(1:end-1)*g./(0.5*1.225*5.87/23.77*vMinLD.^2*S);
+        controlLimMaritimeMin = controlLim(de0_maritime,25,cmde_maritime,CLtrim);
+        controlLimMaritimeMax = controlLim(de0_maritime,-25,cmde_maritime,CLtrim); 
+        
+    elseif strcmp(mission,'Airfield')
+        de0_airfield = 1.68; % rad
+        cmde_airfield = -0.032; % rad?
+        airfieldW = totalWeight(1:end-1);
+        %vMinLD = linspace(160,99,length(airfieldW)); 
+        CLtrim = totalWeight(1:end-1)*g./(0.5*1.225*5.87/23.77*vMinLD.^2*S);
+        controlLimAirfieldMin = controlLim(de0_airfield,25,cmde_airfield,CLtrim); 
+        controlLimAirfieldMax = controlLim(de0_airfield,-25,cmde_airfield,CLtrim);
+    end
+    
 end
 
 %%
-neutralPoint = (7.825277-x_ac)/c_bar; %7.825277/L*100;
+% neutralPointMeter = 7.961;
+% neutralPoint = (neutralPointMeter-x_ac)/c_bar; %7.825277/L*100; % full payload
+% 
+% maritimeW = 8800:100:allWeight{2,1}(1);
+% airfieldW = 6400:100:allWeight{1,1}(1);
+% 
+% de0_maritime = 0.752; % rad
+% de0_airfield = 1.68; % rad
+% cmde_maritime = -0.0315; % rad?
+% cmde_airfield = -0.032; % rad?
+% 
+% CLtrimM = maritimeW*g/(0.5*1.225*5.87/23.77*100^2*S);
+% CLtrimA = airfieldW*g/(0.5*1.225*5.87/23.77*97^2*S);
+% controlLim = @(de0,de,cmde,CL) (( c_bar*(de0+de)*cmde./CL + neutralPointMeter) - x_ac)/c_bar;
+% controlLimMaritimeMin = controlLim(de0_maritime,25,cmde_maritime,CLtrimM);
+% controlLimMaritimeMax = controlLim(de0_maritime,-25,cmde_maritime,CLtrimM); 
+% controlLimAirfieldMin = controlLim(de0_airfield,25,cmde_airfield,CLtrimA); 
+% controlLimAirfieldMax = controlLim(de0_airfield,-25,cmde_airfield,CLtrimA);
 
 % set default figure parameters
         set(groot,'defaultLineLineWidth',2.0,...
@@ -292,9 +352,9 @@ neutralPoint = (7.825277-x_ac)/c_bar; %7.825277/L*100;
             'defaultAxesYGrid','on')
         
 arraySize = size(cg_percent_vec,1);
-xLimits = [42 49];
+xLimits = [-1 1]; %[42 49];
 yLimits1 = [0 75];
-yLimits2 = [5000 25000];
+yLimits2 = [5000 22500];
 xAxisName = 'cg location (% MAC)';
 
 figure(1)
@@ -326,7 +386,7 @@ xlabel(xAxisName)
 ylim(yLimits1)
 title(missionType{2})
 
-
+hold off
 
 figure(2)
 subplot(1,2,1)
@@ -335,10 +395,11 @@ for j = 1:arraySize
     legend_labels{j} = sprintf('%.0f kg.', pl_vec(j)); 
     hold on
 end
+plot([neutralPoint neutralPoint], yLimits2,'k--', controlLimAirfieldMin,airfieldW,'b:', controlLimAirfieldMax,airfieldW,'b:')
 legend(legend_labels,'location','SE')
 ylabel('weight (kg)')
 xlabel(xAxisName)
-%xlim(xLimits)
+xlim(xLimits)
 ylim(yLimits2)
 title(missionType{1})
 
@@ -348,10 +409,11 @@ for j = 1:arraySize
     plot(cg_percent_vec{2,j},allWeight{2,j},'linewidth',3)
     hold on
 end
+plot([neutralPoint neutralPoint], yLimits2,'k--', controlLimMaritimeMin,maritimeW,'b:', controlLimMaritimeMax,maritimeW,'b:')
 legend(legend_labels,'location','SE')
 ylabel('weight (kg)')
 xlabel(xAxisName)
-%xlim(xLimits)
+xlim(xLimits)
 ylim(yLimits2)
 title(missionType{2})
 
