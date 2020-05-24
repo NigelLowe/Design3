@@ -14,6 +14,14 @@ close all
 % airfield field 2, maritime last 2
 pl_vec = [500 3500]; % single payload value for run
 en_vec = [60 45 30 18]; %[62 48 37 25];  % single endurance value for run
+
+pl_vec = [3500 500]; % single payload value for run
+en_vec = [45 60  18 30];
+
+pl_vec = [3500 500]; % single payload value for run
+en_vec = [50 62  23 32]; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% update fuel for these
+
+
 tow_vec = [22.5e3 18.5e3]; % TOW for run
 
 insideFuel = [];
@@ -48,7 +56,7 @@ for mission = missionType
         close all;
         clc;
         %clearvars -except wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
-        clearvars -except rhoMat maritimeW airfieldW CLtrimM CLtrimMConst CLtrimA CLtrimAConst vMinLD mean_ac wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
+        clearvars -except enduranceM enduranceA internalFuel rhoMat maritimeW airfieldW CLtrimM CLtrimMConst CLtrimA CLtrimAConst vMinLD mean_ac wingWeight t_run cdo_dirty cdo_clean componentWeights w_sweep ct cr finalParams row col mission missionType allWeight internalFuelWeight wingFuelWeight taper_r fused time_res pl_num pl_vec tow_num tow_vec en_num en_vec c V rho_fuel insideFuel t_vec totalWeight_vec cg_percent_vec S AR b e cdo k TSFC prop_n empty_weight reach_toc cruise_alt loiter_point v_cruise v_loiter target_roc ld_climb cl_climb clmax clmin cd0 cd0c g rho0 TOW
 
         %internalFuelWeight = ceil(internalFuelWeight/100)*100 + 100;
         
@@ -202,15 +210,43 @@ for mission = missionType
 
         %% Fuel Weight
         % masses in kg %inFuel
+        internalFuelLoc = [5865/16000 8685/16000 11435/16000 7250/16000];
         if strcmp(mission,'Maritime')
+            fuelTankVolume = [3.338 4.368 2.193 2.463];
+            if pl_num == 500
+                internalFuelVolume = fuelTankVolume;
+                internalFuelVolume([1,4]) = 0;
+                internalFuelVolume(1) = internalFuel - sum(internalFuelVolume);
+            else
+                internalFuelVolume = [0 internalFuel 0 0];
+            end
+                
+            
             inFuel = 0.54;
         else
+            fuelTankVolume = [4.532 4.368 2.193 2.463];
+            if pl_num == 500
+                internalFuelVolume = fuelTankVolume;
+            else
+                internalFuelVolume = fuelTankVolume;
+                internalFuelVolume([1,4]) = 0;
+                internalFuelVolume(1) = internalFuel - sum(internalFuelVolume);
+            end
             inFuel = 0.51;
         end
+        internalFuelMass = internalFuelVolume*rho_fuel;
+        
         fuelStart(1) = weightClass(      'Wing Fuel',     wingFuelWeight, rearWing, L);
-        fuelStart(2) = weightClass(  'Internal Fuel', internalFuelWeight,   inFuel, L);
+%         fuelStart(2) = weightClass(  'Internal Fuel', internalFuelWeight,   inFuel, L);
+        for i = 1:length(internalFuelLoc)
+            fuelStart(i+1) = weightClass(  'Internal Fuel', internalFuelMass(i),   internalFuelLoc(i), L);
+        end
+        
         fuel(1) = weightClass(    'Wing Fuel Flight',     wingFuelWeight, rearWing, L);
-        fuel(2) = weightClass('Internal Fuel Flight', internalFuelWeight,   inFuel, L);
+%         fuel(2) = weightClass('Internal Fuel Flight', internalFuelWeight,   inFuel, L);
+        for i = 1:length(internalFuelLoc)
+            fuel(i+1) = weightClass('Internal Flight Fuel', internalFuelMass(i),   internalFuelLoc(i), L);
+        end
         [fuelWeight, fuelMoment] = fuelStart.totalWM;
         fprintf('total fuel:      %.0f kg | %.0f kgm\n\n',fuelWeight,fuelMoment);    
 
@@ -239,12 +275,25 @@ for mission = missionType
         for i = 1:length(fused)
             fuelU = fused(i);
 
-            if fuel(2).weight > 0 % use internal fuel first 
+%             if fuel(2).weight > 0 % use internal fuel first 
+%                 fuel(2).updateWeight(fuel(2).weight - fuelU);
+%             else % use wing  fuel after internal finished
+%                 fuel(1).updateWeight(fuel(1).weight - fuelU);
+%             end
+
+
+            if fuel(2).weight > 0 % use tank 1 first 
                 fuel(2).updateWeight(fuel(2).weight - fuelU);
+            elseif fuel(3).weight > 0 % use tank 3 next
+                fuel(3).updateWeight(fuel(3).weight - fuelU);
+            elseif fuel(5).weight > 0 % use tank 4 next
+                fuel(5).updateWeight(fuel(5).weight - fuelU);
+            elseif fuel(4).weight > 0 % use tank 2 next
+                fuel(4).updateWeight(fuel(4).weight - fuelU);
             else % use wing  fuel after internal finished
                 fuel(1).updateWeight(fuel(1).weight - fuelU);
             end
-
+            
             if i == round(length(fused)/2)
                 payload(4).updateWeight(0);
                 [payloadWeight, payloadMoment] = payload.totalWM;
@@ -291,11 +340,13 @@ for mission = missionType
 
     if strcmp(mission,'Maritime')
         maritimeW = totalWeight(1:end-1);
+        enduranceM = t_run(1:end-1);
         CLtrimM = totalWeight(1:end-1)*g./(0.5*rhoMat.*vMinLD.^2*S);
         CLtrimMConst = totalWeight(1:end-1)*g./(0.5*1.225*5.87/23.77*(200*0.514444)^2*S);
         
     elseif strcmp(mission,'Airfield')
         airfieldW = totalWeight(1:end-1);
+        enduranceA = t_run(1:end-1);
         CLtrimA = totalWeight(1:end-1)*g./(0.5*rhoMat.*vMinLD.^2*S);
         CLtrimAConst = totalWeight(1:end-1)*g./(0.5*1.225*5.87/23.77*(195*0.514444)^2*S);
     end
@@ -309,45 +360,8 @@ end
             'defaultLineMarkerSize',30,...
             'defaultAxesXGrid','on',...
             'defaultAxesYGrid','on')
+
         
-arraySize = size(cg_percent_vec,1);
-xLimits = [-0.4 1]; %[42 49];
-yLimits1 = [0 75];
-yLimits2 = [1000 22500];
-yLimits3 = [6000 18500];
-xAxisName = 'cg location (percent MAC)';
-
-figure(1)
-subplot(1,2,1)
-for j = 1:arraySize
-    plot(cg_percent_vec{1,j},t_vec{1,j},'linewidth',3)
-    legend_labels{j} = sprintf('%.0f kg', pl_vec(j));
-    hold on
-end
-plot([neutralPoint neutralPoint], yLimits1,'k--')
-legend(legend_labels,'location','NE')
-ylabel('endurance (hr)')
-xlabel(xAxisName)
-%xlim(xLimits)
-ylim(yLimits1)
-title(missionType{1})
-
-
-subplot(1,2,2)
-for j = 1:arraySize
-    plot(cg_percent_vec{2,j},t_vec{2,j},'linewidth',3)
-    hold on
-end
-plot([neutralPoint neutralPoint], yLimits1,'k--')
-legend(legend_labels,'location','NE')
-ylabel('endurance (hr)')
-xlabel(xAxisName)
-%xlim(xLimits)
-ylim(yLimits1)
-title(missionType{2})
-
-hold off
-
 de0_maritime = 0.752; % rad
 cmde_maritime = -0.0315; % rad?
 de0_airfield = 1.68; % rad
@@ -362,18 +376,60 @@ controlLimMaritimeDownConst = controlLim(de0_maritime,-25,cmde_maritime,CLtrimMC
 controlLimAirfieldUpConst = controlLim(de0_airfield,25,cmde_airfield,CLtrimAConst); 
 controlLimAirfieldDownConst = controlLim(de0_airfield,-25,cmde_airfield,CLtrimAConst);
 
+arraySize = size(cg_percent_vec,1);
+xLimits = [-0.4 1]; %[42 49];
+yLimits1 = [0 60];
+yLimits2 = [1000 22500];
+yLimits3 = [6000 18500];
+yLimits4 = [0 65];
+xAxisName = 'cg location (percent MAC)';
+
+figure(1)
+subplot(1,2,1)
+for j = 1:arraySize
+    plot(cg_percent_vec{1,j},t_vec{1,j},'linewidth',3)
+    legend_labels{j} = sprintf('%.0f kg', pl_vec(j));
+    hold on
+end
+plot([neutralPoint neutralPoint], yLimits4,'k--', controlLimAirfieldUp,enduranceA,'b:', controlLimAirfieldUpConst,enduranceA,'r-.')
+legend_labels(end+1) = cellstr('Neutral Point');
+legend_labels(end+1) = cellstr('Ideal Case Ruddervator Limit');
+legend_labels(end+1) = cellstr('Worst Case Ruddervator Limit');
+legend(legend_labels,'location','NE')
+ylabel('endurance (hr)')
+xlabel(xAxisName)
+xlim(xLimits)
+ylim(yLimits1)
+title(missionType{1})
+
+
+subplot(1,2,2)
+for j = 1:arraySize
+    plot(cg_percent_vec{2,j},t_vec{2,j},'linewidth',3)
+    hold on
+end
+plot([neutralPoint neutralPoint], yLimits4,'k--', controlLimMaritimeUp,enduranceM,'b:', controlLimMaritimeUpConst,enduranceM,'r-.')
+legend(legend_labels,'location','NE')
+ylabel('endurance (hr)')
+xlabel(xAxisName)
+xlim(xLimits)
+ylim(yLimits1)
+title(missionType{2})
+
+hold off
+
 figure(2)
 subplot(1,2,1)
 for j = 1:arraySize
     plot(cg_percent_vec{1,j},allWeight{1,j},'linewidth',3)
-    legend_labels{j} = sprintf('%.0f kg', pl_vec(j)); 
+    %legend_labels{j} = sprintf('%.0f kg', pl_vec(j)); 
     hold on
 end
 %plot([neutralPoint neutralPoint], yLimits2,'k--', controlLimAirfieldUp,airfieldW,'b:', controlLimAirfieldDown,airfieldW,'b:')
 plot([neutralPoint neutralPoint], yLimits2,'k--', controlLimAirfieldUp,airfieldW,'b:', controlLimAirfieldUpConst,airfieldW,'r-.')
-legend_labels(end+1) = cellstr('Neutral Point');
-legend_labels(end+1) = cellstr('Ideal Case Ruddervator Limit');
-legend_labels(end+1) = cellstr('Worst Case Ruddervator Limit');
+% legend_labels(end+1) = cellstr('Neutral Point');
+% legend_labels(end+1) = cellstr('Ideal Case Ruddervator Limit');
+% legend_labels(end+1) = cellstr('Worst Case Ruddervator Limit');
 legend(legend_labels,'location','S')
 ylabel('weight (kg)')
 xlabel(xAxisName)

@@ -20,7 +20,7 @@ albatross_parameters_airfield;
 
 % Input aerodynamic parameters.
 g = 9.81;                 % gravity in SI
-MTOW = 6300*g;           % N --------------------------------------------- from design min to design max weight 
+MTOW = 18500*g;           % N --------------------------------------------- from design min to design max weight 
 rho0 = 1.225;             % kg/m3 - SL density 
 W_L = MTOW/S;             % kg/m^2 wing loading
 
@@ -32,25 +32,28 @@ if alt < 20000
 else
     U_1 = 15.2 - 19/75000 * (alt - 20000);
     U_2 = 7.6 - 19/150000 * (alt - 20000);
-    rho = rho0*3.468/14.696; % 35000ft factor    -------------------------- needs to be done at range of operating altitude
+    rho = rho0*5.87/23.77; % 40000ft factor    -------------------------- needs to be done at range of operating altitude
 end
 
 %% Calculations
 
 % Max lift at stall
-CLmax_Up = 2; %MTOW/(0.5*rho*S*(V_stallup^2));
+CLmax_Up = 2.15; %MTOW/(0.5*rho*S*(V_stallup^2));
 CLmax_Down = 1.5; %MTOW/(0.5*rho*S*(V_stalldown^2));
 V_stallup = sqrt(MTOW/(0.5*rho*CLmax_Up*S)); %52;   % m/s
 V_stalldown = sqrt(MTOW/(0.5*rho*CLmax_Down*S)); %55; % m/s
 
-% Designed cruise speed.
-V_C = 200*0.514444; % knots
 
-% Limiting dive speed
-V_D = 320*0.514444; % knots
+% Maritime
+V_C = 260*0.514444; % knots % Designed cruise speed.
+V_D = 325*0.514444; % knots % Limiting dive speed
+
+% Airfield
+% V_C = 310*0.514444; % knots % Designed cruise speed.
+% V_D = 390*0.514444; % knots % Limiting dive speed
 
 % max loading factor
-nmax_positive = min(3.8, 2.1 + (10900/(22500*g/g + 4536)));
+nmax_positive = min(3.8, 2.1 + (10900/(22500 + 4536)));
 nmax_negative = -0.4 * nmax_positive;
 
 % Lift curve slope
@@ -73,20 +76,20 @@ n_p = 0:0.001:nmax_positive;
 Va_p = sqrt((n_p(:)*MTOW)./(0.5*rho*CLmax_Up*S));
 
 % Convert velocities to knots for plotting
-Va_p = Va_p*1.94384;
-Va_Up = Va_Up*1.94384;
-Va_Down = Va_Down*1.94384;
-V_C = V_C*1.94384;
-V_D = V_D*1.94384;
-V_stallup = V_stallup*1.94384;
-V_stalldown = V_stalldown*1.94384;
+% Va_p = Va_p*1.94384;
+% Va_Up = Va_Up*1.94384;
+% Va_Down = Va_Down*1.94384;
+% V_C = V_C*1.94384;
+% V_D = V_D*1.94384;
+% V_stallup = V_stallup*1.94384;
+% V_stalldown = V_stalldown*1.94384;
 
 % plot arrays
 figure(1);
 hold on;
 plot(Va_p,n_p,'b');
 %title('Flight Envelope');
-xlabel('Airspeed (knots)');
+xlabel('Airspeed (m/s)');
 ylabel('Load Factor n');
 text(10,3.5,'Gust Limits','Color','red','FontSize',15)
 text(10,3,'Manoeuvre Limits','Color','blue','FontSize',15)
@@ -95,7 +98,7 @@ text(10,3,'Manoeuvre Limits','Color','blue','FontSize',15)
 %% Array for the dive manourevility
 n_n = 0:-0.001:nmax_negative;
 Va_n = sqrt(abs((n_n(:)*MTOW)./(0.5*rho*CLmax_Down*S)));
-Va_n = Va_n*1.94384; % convert to knots
+% Va_n = Va_n*1.94384; % convert to knots
 plot(Va_n,n_n,'b');
 
 %% Top line from A to D
